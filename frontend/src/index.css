@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #1E293B;
+  --color-accent: #3B82F6;
+  --color-success: #10B981;
+  --color-background: #F1F5F9;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-primary antialiased min-h-screen font-sans;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-accent text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors shadow-sm;
+  }
+
+  .btn-success {
+    @apply bg-success text-white px-4 py-2 rounded-lg hover:bg-emerald-600 transition-colors shadow-sm;
+  }
+
+  .card {
+    @apply bg-white rounded-xl shadow-md p-6 border border-slate-100;
+  }
+
+  .input-field {
+    @apply w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-all;
+  }
+}
