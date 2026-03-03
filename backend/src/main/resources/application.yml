@@ -2,7 +2,7 @@ spring:
   application:
     name: backend
   datasource:
-    url: jdbc:postgresql://localhost:5432/consentdb
+    url: jdbc:postgresql://localhost:5432/consentdb?options=-c%20timezone=UTC
     username: consentuser
     password: consentpassword
     driver-class-name: org.postgresql.Driver
