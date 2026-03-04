@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/axiosConfig';
-import { FileCheck2, Fingerprint } from 'lucide-react';
 
 const MyConsents = () => {
     const [consents, setConsents] = useState([]);
@@ -21,47 +20,48 @@ const MyConsents = () => {
         fetchMyConsents();
     }, []);
 
-    if (loading) return <div className="p-8 text-center text-slate-500">Loading your secure records...</div>;
+    if (loading) return <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading your secure records...</div>;
 
     return (
-        <div className="p-6">
-            <h2 className="text-xl font-bold text-primary mb-6">My Signed Documents</h2>
-
-            <div className="space-y-4">
-                {consents.map(c => (
-                    <div key={c.id} className="border border-slate-200 rounded-xl p-5 hover:border-success/50 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex items-start gap-4">
-                            <div className="bg-emerald-50 p-3 rounded-full shrink-0">
-                                <FileCheck2 className="w-6 h-6 text-emerald-600" />
-                            </div>
-                            <div>
-                                <h4 className="font-bold text-primary">Template #{c.templateId}</h4>
-                                <div className="text-sm text-slate-500 mt-1 flex flex-col sm:flex-row sm:gap-4">
-                                    <span>Signed: {new Date(c.signedAt).toLocaleString()}</span>
-                                    <span>Status: <strong className="text-emerald-600">Active</strong></span>
+        <>
+            {consents.length === 0 ? (
+                <div className="empty-state">
+                    <div className="empty-icon">✓</div>
+                    <h3>No Signed Documents</h3>
+                    <p>You haven't signed any documents yet.</p>
+                </div>
+            ) : (
+                <div className="consent-grid" style={{ transitionDelay: '0.3s' }}>
+                    {consents.map((c, i) => (
+                        <div key={c.id} className="consent-card" style={{ animationDelay: `${i * 0.1}s` }}>
+                            <div className="consent-card-header">
+                                <div>
+                                    <div className="consent-card-title">Template #{c.templateId}</div>
+                                    <div className="consent-card-org">Signed Record</div>
                                 </div>
+                                <span className="status-badge status-signed">Active</span>
                             </div>
-                        </div>
 
-                        <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 flex items-center gap-3">
-                            <Fingerprint className="w-5 h-5 text-slate-400 shrink-0" />
-                            <div>
-                                <p className="text-[10px] uppercase text-slate-400 font-bold tracking-wider mb-0.5">SHA-256 Digital Fingerprint</p>
-                                <p className="font-mono text-xs text-slate-600 truncate max-w-[200px]" title={c.signatureHash}>
+                            <div style={{ marginTop: '16px', background: 'var(--cream)', borderRadius: '12px', padding: '12px', border: '1px solid var(--border)' }}>
+                                <p style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '4px' }}>SHA-256 Fingerprint</p>
+                                <p style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'var(--forest)', wordBreak: 'break-all', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }} title={c.signatureHash}>
                                     {c.signatureHash}
                                 </p>
                             </div>
-                        </div>
-                    </div>
-                ))}
-            </div>
 
-            {consents.length === 0 && (
-                <div className="text-center py-12">
-                    <p className="text-slate-500">You haven't signed any documents yet.</p>
+                            <div className="consent-card-meta" style={{ marginTop: '20px' }}>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span style={{ color: 'var(--sage)' }}>📅</span> {new Date(c.signedAt).toLocaleDateString()}
+                                </span>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span style={{ color: 'var(--sage)' }}>⏰</span> {new Date(c.signedAt).toLocaleTimeString()}
+                                </span>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             )}
-        </div>
+        </>
     );
 };
 

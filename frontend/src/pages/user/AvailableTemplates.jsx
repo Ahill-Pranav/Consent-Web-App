@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/axiosConfig';
-import { FileSignature, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useToast } from '../../components/ToastProvider';
 
-const AvailableTemplates = () => {
+const AvailableTemplates = ({ setPendingCount }) => {
+    const { showToast } = useToast();
     const [templates, setTemplates] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -17,8 +18,12 @@ const AvailableTemplates = () => {
             setLoading(true);
             const response = await api.get('/templates');
             setTemplates(response.data);
+            if (setPendingCount) {
+                setPendingCount(response.data.length);
+            }
         } catch (error) {
             console.error("Failed to fetch templates", error);
+            showToast("Failed to fetch templates", "✕");
         } finally {
             setLoading(false);
         }
@@ -26,7 +31,7 @@ const AvailableTemplates = () => {
 
     useEffect(() => {
         fetchTemplates();
-    }, []);
+    }, [setPendingCount]);
 
     const openSigningModal = (template) => {
         setSelectedTemplate(template);
@@ -39,124 +44,128 @@ const AvailableTemplates = () => {
             setSigning(true);
             await api.post(`/consents/${selectedTemplate.id}/sign`);
             setSignSuccess(true);
-
-            // Re-fetch to potentially remove from active list if you only want to show unsigned
-            // For now we keep it simple or let them see it and we can just show success msg.
+            showToast("Document signed successfully!");
+            // Re-fetch to update pending count and list
+            fetchTemplates();
         } catch (error) {
             console.error("Signing failed", error);
-            alert(error.response?.data?.message || "Failed to sign document");
+            showToast(error.response?.data?.message || "Failed to sign document", "✕");
         } finally {
             setSigning(false);
         }
     };
 
-    if (loading) return <div className="p-8 text-center text-slate-500">Loading templates...</div>;
+    if (loading) {
+        return <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading documents...</div>;
+    }
 
     return (
-        <div className="p-6">
-            <h2 className="text-xl font-bold text-primary mb-6">Documents Requiring Consent</h2>
-
-            <div className="grid gap-6 md:grid-cols-2">
-                {templates.map(t => (
-                    <div key={t.id} className="border border-slate-200 rounded-xl p-6 hover:shadow-md transition-shadow bg-slate-50/50">
-                        <div className="flex items-start justify-between mb-4">
-                            <div className="bg-blue-100 p-3 rounded-lg text-accent">
-                                <FileSignature className="w-6 h-6" />
+        <>
+            {templates.length === 0 ? (
+                <div className="empty-state">
+                    <div className="empty-icon">📂</div>
+                    <h3>All Caught Up!</h3>
+                    <p>There are no pending documents requiring your consent at this time. Check your signed forms tab for past records.</p>
+                </div>
+            ) : (
+                <div className="consent-grid" style={{ transitionDelay: '0.3s' }}>
+                    {templates.map((t, i) => (
+                        <div key={t.id} className="consent-card" style={{ animationDelay: `${i * 0.1}s` }}>
+                            <div className="consent-card-header">
+                                <div>
+                                    <div className="consent-card-title">{t.title}</div>
+                                    <div className="consent-card-org">ConsentForm App</div>
+                                </div>
+                                <span className="status-badge status-pending">Action Required</span>
                             </div>
+                            <p style={{ fontSize: '0.88rem', color: 'var(--text-body)', marginTop: '12px', lineHeight: '1.5', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                {t.description || "Review this document and provide your digital consent."}
+                            </p>
+                            <div className="consent-card-meta">
+                                <span>Requires e-signature</span>
+                            </div>
+                            <button
+                                className="btn-primary"
+                                style={{ marginTop: '20px', padding: '12px', fontSize: '0.9rem' }}
+                                onClick={() => openSigningModal(t)}
+                            >
+                                Review & Sign
+                            </button>
                         </div>
-                        <h3 className="font-bold text-lg text-primary mb-2 line-clamp-1">{t.title}</h3>
-                        <p className="text-sm text-slate-500 mb-6 line-clamp-2">{t.description || "Review this document and provide your digital consent."}</p>
-
-                        <button
-                            onClick={() => openSigningModal(t)}
-                            className="w-full btn-success bg-white border border-success text-success hover:bg-success hover:text-white pb-3"
-                        >
-                            Review & Sign
-                        </button>
-                    </div>
-                ))}
-            </div>
-
-            {templates.length === 0 && (
-                <div className="text-center py-12">
-                    <CheckCircle2 className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-slate-600">All Caught Up!</h3>
-                    <p className="text-slate-500 mt-1">There are no pending documents requiring your consent.</p>
+                    ))}
                 </div>
             )}
 
             {selectedTemplate && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
-                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl">
+                <div className="modal-overlay" style={{ display: 'flex', position: 'fixed', inset: 0, background: 'rgba(13,43,34,0.6)', backdropFilter: 'blur(8px)', zIndex: 100, alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                    <div className="modal reveal" style={{ background: 'var(--cream)', borderRadius: '24px', width: '100%', maxWidth: '840px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 24px 80px rgba(13,43,34,0.4)' }}>
+                        <div className="modal-header" style={{ padding: '24px 32px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white' }}>
                             <div>
-                                <h3 className="text-xl font-bold text-primary">{selectedTemplate.title}</h3>
-                                <p className="text-sm text-slate-500 mt-1">Review the legal terms below</p>
+                                <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1.8rem', color: 'var(--forest-dark)', marginBottom: '4px' }}>Review Agreement</h2>
+                                <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>{selectedTemplate.title}</div>
                             </div>
+                            {!signSuccess && (
+                                <button
+                                    className="modal-close"
+                                    onClick={() => setSelectedTemplate(null)}
+                                    style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1px solid var(--border)', background: 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', fontSize: '1.2rem', color: 'var(--text-muted)' }}
+                                >
+                                    ✕
+                                </button>
+                            )}
                         </div>
 
-                        <div className="p-8 overflow-y-auto flex-1 bg-white">
+                        <div className="modal-body" style={{ padding: '32px', overflowY: 'auto', flex: 1, position: 'relative' }}>
                             {signSuccess ? (
-                                <div className="text-center py-12">
-                                    <div className="bg-green-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                                        <CheckCircle2 className="w-10 h-10 text-green-600" />
-                                    </div>
-                                    <h2 className="text-2xl font-bold text-green-800 mb-2">Consent Recorded</h2>
-                                    <p className="text-slate-600 mb-8 max-w-md mx-auto">
-                                        Your digital signature has been securely hashed and recorded in the audit log.
-                                    </p>
-                                    <button
-                                        onClick={() => setSelectedTemplate(null)}
-                                        className="btn-success px-8 h-12"
-                                    >
-                                        Return to Dashboard
-                                    </button>
+                                <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                                    <div style={{ width: '80px', height: '80px', background: 'var(--forest)', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px', margin: '0 auto 24px', animation: 'reveal-up 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>✅</div>
+                                    <h3 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '2rem', color: 'var(--forest-dark)', marginBottom: '12px' }}>Consent Recorded</h3>
+                                    <p style={{ color: 'var(--text-body)', fontSize: '1.05rem', maxWidth: '400px', margin: '0 auto 32px' }}>Your digital signature has been securely hashed and recorded in the audit log.</p>
+                                    <button onClick={() => setSelectedTemplate(null)} className="btn-primary" style={{ maxWidth: '240px' }}>Return to Dashboard</button>
                                 </div>
                             ) : (
                                 <>
-                                    <div className="prose prose-sm max-w-none text-slate-700 bg-slate-50 p-6 rounded-lg border border-slate-200 min-h-[200px] whitespace-pre-wrap">
+                                    <div className="document-view" style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid var(--border)', lineHeight: 1.6, fontSize: '0.95rem', color: 'var(--text-body)', marginBottom: '32px', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.02)', whiteSpace: 'pre-wrap' }}>
                                         {selectedTemplate.content}
                                     </div>
 
-                                    <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
-                                        <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                                        <div className="text-sm text-blue-800">
-                                            <p className="font-semibold mb-1">Digital Signature Acknowledgment</p>
-                                            <p>By checking the box below, you agree that your digital signature is the legally binding equivalent of your handwritten signature.</p>
-                                        </div>
-                                    </div>
+                                    <div className="sign-area" style={{ background: 'var(--amber-pale)', borderRadius: '16px', padding: '24px', border: '1px solid rgba(232,146,58,0.2)' }}>
+                                        <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+                                            <div style={{ color: 'var(--amber)' }}>⚠</div>
+                                            <div>
+                                                <h4 style={{ color: '#B8650A', marginBottom: '8px', fontSize: '0.95rem' }}>Digital Signature Acknowledgment</h4>
+                                                <p style={{ color: 'var(--text-body)', fontSize: '0.88rem', marginBottom: '16px' }}>By checking the box below, you agree that your digital signature is the legally binding equivalent of your handwritten signature.</p>
 
-                                    <div className="mt-6 flex items-center gap-3">
-                                        <input
-                                            type="checkbox"
-                                            id="agree"
-                                            className="w-5 h-5 text-success rounded border-slate-300 focus:ring-success cursor-pointer"
-                                            checked={signAgreement}
-                                            onChange={(e) => setSignAgreement(e.target.checked)}
-                                        />
-                                        <label htmlFor="agree" className="text-slate-700 font-medium cursor-pointer select-none">
-                                            I have read and agree to the terms outlined above.
-                                        </label>
+                                                <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={signAgreement}
+                                                        onChange={(e) => setSignAgreement(e.target.checked)}
+                                                        style={{ width: '20px', height: '20px', accentColor: 'var(--forest)', cursor: 'pointer' }}
+                                                    />
+                                                    <span style={{ fontWeight: 500, color: 'var(--forest-dark)' }}>I have read and agree to the terms outlined above.</span>
+                                                </label>
+                                            </div>
+                                        </div>
                                     </div>
                                 </>
                             )}
                         </div>
 
                         {!signSuccess && (
-                            <div className="p-6 border-t border-slate-100 flex justify-end gap-3 bg-slate-50 rounded-b-xl">
+                            <div className="modal-footer" style={{ padding: '24px 32px', borderTop: '1px solid var(--border)', background: 'white', display: 'flex', justifyContent: 'flex-end', gap: '16px' }}>
                                 <button
                                     onClick={() => setSelectedTemplate(null)}
-                                    className="px-6 py-2.5 rounded-lg font-medium text-slate-600 hover:bg-slate-200 transition-colors"
                                     disabled={signing}
+                                    style={{ padding: '14px 24px', background: 'transparent', border: 'none', fontFamily: "'Outfit', sans-serif", fontWeight: 600, color: 'var(--text-muted)', cursor: 'pointer' }}
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleSign}
                                     disabled={!signAgreement || signing}
-                                    className={`px-8 py-2.5 rounded-lg font-medium text-white transition-all shadow-sm
-                                        ${signAgreement && !signing ? 'bg-success hover:bg-emerald-600 hover:shadow-md' : 'bg-success/50 cursor-not-allowed'}
-                                    `}
+                                    className="btn-primary"
+                                    style={{ width: 'auto', padding: '14px 32px' }}
                                 >
                                     {signing ? 'Processing...' : 'Sign Document'}
                                 </button>
@@ -165,7 +174,7 @@ const AvailableTemplates = () => {
                     </div>
                 </div>
             )}
-        </div>
+        </>
     );
 };
 

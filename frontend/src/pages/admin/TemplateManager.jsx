@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/axiosConfig';
-import { Plus, Edit2, Trash2, X, Check, Eye } from 'lucide-react';
 
-const TemplateManager = () => {
+const TemplateManager = ({ setTemplateCount }) => {
     const [templates, setTemplates] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -16,6 +15,7 @@ const TemplateManager = () => {
             setLoading(true);
             const response = await api.get('/templates');
             setTemplates(response.data);
+            if (setTemplateCount) setTemplateCount(response.data.length);
         } catch (error) {
             console.error("Failed to fetch templates", error);
         } finally {
@@ -25,7 +25,7 @@ const TemplateManager = () => {
 
     useEffect(() => {
         fetchTemplates();
-    }, []);
+    }, [setTemplateCount]);
 
     const openModal = (template = null) => {
         if (template) {
@@ -75,63 +75,72 @@ const TemplateManager = () => {
         }
     };
 
-    if (loading) return <div className="p-8 text-center text-slate-500">Loading templates...</div>;
+    if (loading) return <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading templates...</div>;
 
     return (
-        <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
-                <div>
-                    <h2 className="text-xl font-bold text-primary">Consent Templates</h2>
-                    <p className="text-sm text-slate-500">Create and manage forms users will sign.</p>
-                </div>
-                <button onClick={() => openModal()} className="btn-primary flex items-center gap-2">
-                    <Plus className="w-4 h-4" /> New Template
+        <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1.5rem', color: 'var(--forest-dark)' }}>Consent Templates</h2>
+                <button onClick={() => openModal()} className="btn-primary" style={{ padding: '10px 20px', fontSize: '0.9rem' }}>
+                    + Create New
                 </button>
             </div>
 
-            <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+            <div className="admin-table-container">
+                <table className="admin-table">
                     <thead>
-                        <tr className="border-b border-slate-200 bg-slate-50 text-slate-600 text-sm uppercase tracking-wider">
-                            <th className="p-4 rounded-tl-lg font-medium">Title</th>
-                            <th className="p-4 font-medium">Status</th>
-                            <th className="p-4 font-medium">Created On</th>
-                            <th className="p-4 rounded-tr-lg font-medium text-right">Actions</th>
+                        <tr>
+                            <th>Title & Description</th>
+                            <th>Status</th>
+                            <th>Created On</th>
+                            <th style={{ textAlign: 'right' }}>Actions</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody>
                         {templates.map(t => (
-                            <tr key={t.id} className="hover:bg-slate-50/50 transition-colors">
-                                <td className="p-4">
-                                    <div className="font-semibold text-primary">{t.title}</div>
-                                    <div className="text-xs text-slate-500 truncate max-w-xs">{t.description}</div>
+                            <tr key={t.id} className={t.isActive ? 'row-active' : 'row-inactive'} style={{ position: 'relative' }}>
+                                <td style={{ position: 'relative', paddingLeft: '32px' }}>
+                                    <div style={{ fontWeight: 600, color: 'var(--forest-dark)', marginBottom: '4px' }}>{t.title}</div>
+                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{t.description || "No description provided."}</div>
                                 </td>
-                                <td className="p-4">
+                                <td>
                                     {t.isActive ?
-                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                            <Check className="w-3 h-3" /> Active
-                                        </span> :
-                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                            <X className="w-3 h-3" /> Inactive
-                                        </span>
+                                        <span className="status-badge status-signed" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: 'var(--forest)' }}></span>Active</span> :
+                                        <span className="status-badge status-expired" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: '#B41E1E', animation: 'pulse-dot 2s infinite' }}></span>Draft</span>
                                     }
                                 </td>
-                                <td className="p-4 text-sm text-slate-600">
+                                <td>
                                     {new Date(t.createdAt).toLocaleDateString()}
                                 </td>
-                                <td className="p-4 flex gap-2 justify-end">
-                                    <button onClick={() => openModal(t)} className="p-2 text-slate-400 hover:text-accent bg-white border border-slate-200 rounded-md shadow-sm transition-colors">
-                                        <Edit2 className="w-4 h-4" />
+                                <td style={{ textAlign: 'right' }}>
+                                    <button
+                                        onClick={() => openModal(t)}
+                                        style={{ background: 'var(--cream)', border: '1px solid var(--border)', borderRadius: '6px', padding: '6px 12px', fontSize: '0.8rem', cursor: 'pointer', marginRight: '8px', color: 'var(--forest)' }}
+                                    >
+                                        Edit
                                     </button>
-                                    <button onClick={() => handleDelete(t.id)} className="p-2 text-slate-400 hover:text-red-500 bg-white border border-slate-200 rounded-md shadow-sm transition-colors">
-                                        <Trash2 className="w-4 h-4" />
+                                    <button
+                                        onClick={() => handleDelete(t.id)}
+                                        style={{ background: 'var(--cream)', border: '1px solid var(--border)', borderRadius: '6px', padding: '6px 12px', fontSize: '0.8rem', cursor: 'pointer', color: '#B41E1E' }}
+                                    >
+                                        Delete
                                     </button>
                                 </td>
                             </tr>
                         ))}
                         {templates.length === 0 && (
                             <tr>
-                                <td colSpan="4" className="p-8 text-center text-slate-500 text-sm">No templates found. Create one.</td>
+                                <td colSpan="4" style={{ padding: '0' }}>
+                                    <div style={{ padding: '80px 40px', textAlign: 'center', position: 'relative', background: 'var(--cream)' }}>
+                                        <svg style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '180px', height: '180px', opacity: '0.04', color: 'var(--forest-dark)' }} viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
+                                        </svg>
+                                        <div style={{ position: 'relative', zIndex: 1 }}>
+                                            <h4 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1.4rem', color: 'var(--forest-dark)', marginBottom: '8px' }}>No templates found</h4>
+                                            <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>Get started by creating your first consent template.</p>
+                                        </div>
+                                    </div>
+                                </td>
                             </tr>
                         )}
                     </tbody>
@@ -140,43 +149,98 @@ const TemplateManager = () => {
 
             {/* Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-                        <div className="flex justify-between items-center p-6 border-b border-slate-100">
-                            <h3 className="text-xl font-bold text-primary">{currentTemplate ? 'Edit Template' : 'New Template'}</h3>
-                            <button onClick={closeModal} className="text-slate-400 hover:text-slate-600">
-                                <X className="w-5 h-5" />
+                <div className="modal-overlay" style={{ display: 'flex', position: 'fixed', inset: 0, background: 'rgba(13,43,34,0.6)', backdropFilter: 'blur(8px)', zIndex: 100, alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                    <div className="modal reveal" style={{ background: 'var(--cream)', borderRadius: '24px', width: '100%', maxWidth: '700px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 32px 120px rgba(13,43,34,0.3)', border: '1px solid var(--border)', borderTop: '6px solid var(--forest)' }}>
+                        <div className="modal-header" style={{ padding: '24px 32px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white' }}>
+                            <div>
+                                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Step 1 of 1</div>
+                                <h3 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '2.2rem', fontWeight: 'bold', color: 'var(--forest-dark)', marginBottom: '0', letterSpacing: '-0.02em', lineHeight: '1' }}>{currentTemplate ? 'Edit Template' : 'New Template'}</h3>
+                            </div>
+                            <button
+                                onClick={closeModal}
+                                style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1px solid var(--border)', background: 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', fontSize: '1.2rem', color: 'var(--text-muted)' }}
+                            >
+                                ✕
                             </button>
                         </div>
 
-                        <div className="p-6 overflow-y-auto flex-1">
-                            <form id="templateForm" onSubmit={handleSave} className="space-y-4">
+                        <div className="modal-body" style={{ padding: '32px', overflowY: 'auto', flex: 1 }}>
+                            <form id="templateForm" onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Title</label>
-                                    <input type="text" required className="input-field" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} />
+                                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Title</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="form-input"
+                                        style={{ background: 'white' }}
+                                        value={formData.title}
+                                        onChange={e => setFormData({ ...formData, title: e.target.value })}
+                                    />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
-                                    <input type="text" className="input-field" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
+                                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Description</label>
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        style={{ background: 'white' }}
+                                        value={formData.description}
+                                        onChange={e => setFormData({ ...formData, description: e.target.value })}
+                                    />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Consent Content</label>
-                                    <textarea required rows="8" className="input-field font-mono text-sm resize-y" value={formData.content} onChange={e => setFormData({ ...formData, content: e.target.value })} placeholder="Draft your legal consent content here..."></textarea>
+                                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Consent Content</label>
+                                    <textarea
+                                        required
+                                        rows="4"
+                                        className="form-input"
+                                        style={{ resize: 'vertical', fontFamily: 'monospace', fontSize: '0.9rem', lineHeight: '1.5', background: 'white', minHeight: '100px' }}
+                                        value={formData.content}
+                                        onChange={e => setFormData({ ...formData, content: e.target.value })}
+                                        placeholder="Draft your legal consent content here..."
+                                    ></textarea>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <input type="checkbox" id="isActive" checked={formData.isActive} onChange={e => setFormData({ ...formData, isActive: e.target.checked })} className="w-4 h-4 text-accent rounded border-slate-300 focus:ring-accent" />
-                                    <label htmlFor="isActive" className="text-sm font-medium text-slate-700">Set as Active (visible to users)</label>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '16px', background: 'rgba(27,77,62,0.04)', padding: '16px 20px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                                    <input
+                                        type="checkbox"
+                                        id="isActive"
+                                        checked={formData.isActive}
+                                        onChange={e => setFormData({ ...formData, isActive: e.target.checked })}
+                                        style={{ width: '18px', height: '18px', accentColor: 'var(--forest)' }}
+                                    />
+                                    <label htmlFor="isActive" style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--forest-dark)', cursor: 'pointer' }}>
+                                        Set as Active (visible to users)
+                                    </label>
                                 </div>
                             </form>
                         </div>
 
-                        <div className="p-6 border-t border-slate-100 flex justify-end gap-3 bg-slate-50 rounded-b-xl">
-                            <button type="button" onClick={closeModal} className="px-4 py-2 rounded-lg font-medium text-slate-600 hover:bg-slate-200 transition-colors">Cancel</button>
-                            <button type="submit" form="templateForm" className="btn-primary">Save Template</button>
+                        <div className="modal-footer" style={{ padding: '24px 32px', borderTop: '2px solid var(--cream-dark)', background: '#FAFAFA', display: 'flex', justifyContent: 'flex-end', gap: '16px' }}>
+                            <button type="button" onClick={closeModal} style={{ padding: '12px 24px', background: 'transparent', border: 'none', fontFamily: "'Outfit', sans-serif", fontWeight: 600, color: 'var(--text-muted)', cursor: 'pointer' }}>Cancel</button>
+                            <button type="submit" form="templateForm" className="btn-primary" style={{ padding: '14px 36px', width: 'auto', minWidth: '180px' }}>Save Template</button>
                         </div>
                     </div>
                 </div>
             )}
+            <style>{`
+                .admin-table td:first-child::before {
+                    content: '';
+                    position: absolute;
+                    left: 14px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    width: 4px;
+                    height: calc(100% - 32px);
+                    border-radius: 4px;
+                }
+                .row-active td:first-child::before { background: var(--forest); }
+                .row-inactive td:first-child::before { background: var(--amber); }
+                
+                @keyframes pulse-dot {
+                    0% { opacity: 1; transform: scale(1); }
+                    50% { opacity: 0.5; transform: scale(0.8); }
+                    100% { opacity: 1; transform: scale(1); }
+                }
+            `}</style>
         </div>
     );
 };

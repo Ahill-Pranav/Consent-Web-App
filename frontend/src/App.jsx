@@ -26,34 +26,40 @@ const PublicRoute = ({ children }) => {
   return children;
 };
 
+import { ToastProvider } from './components/ToastProvider'
+import AnimatedBackground from './components/AnimatedBackground'
+
 function App() {
   return (
-    <div className="min-h-screen bg-background">
-      <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
+    <ToastProvider>
+      <div className="app-container">
+        <AnimatedBackground />
+        <Routes>
+          <Route path="/" element={<Navigate to="/login" replace />} />
 
-        <Route path="/login" element={
-          <PublicRoute><Login /></PublicRoute>
-        } />
-        <Route path="/register" element={
-          <PublicRoute><Register /></PublicRoute>
-        } />
+          <Route path="/login" element={
+            <PublicRoute><Login /></PublicRoute>
+          } />
+          <Route path="/register" element={
+            <PublicRoute><Register /></PublicRoute>
+          } />
 
-        {/* Admin Routes */}
-        <Route path="/admin/*" element={
-          <ProtectedRoute requireAdmin={true}>
-            <AdminDashboard />
-          </ProtectedRoute>
-        } />
+          {/* Admin Routes */}
+          <Route path="/admin/*" element={
+            <ProtectedRoute requireAdmin={true}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          } />
 
-        {/* User Routes */}
-        <Route path="/user/*" element={
-          <ProtectedRoute>
-            <UserDashboard />
-          </ProtectedRoute>
-        } />
-      </Routes>
-    </div>
+          {/* User Routes */}
+          <Route path="/user/*" element={
+            <ProtectedRoute>
+              <UserDashboard />
+            </ProtectedRoute>
+          } />
+        </Routes>
+      </div>
+    </ToastProvider>
   )
 }
 

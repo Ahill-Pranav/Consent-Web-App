@@ -3,7 +3,7 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15
-    container_name: consentdb
+    container_name: consentdb-1
     environment:
       POSTGRES_DB: consentdb
       POSTGRES_USER: consentuser
@@ -18,10 +18,10 @@ services:
       timeout: 5s
       retries: 5
 
-  backend:
+  api-backend:
     build:
       context: ./backend
-    container_name: consent-backend
+    container_name: consent-backend-1
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/consentdb
       - SPRING_DATASOURCE_USERNAME=consentuser
@@ -37,11 +37,11 @@ services:
   frontend:
     build:
       context: ./frontend
-    container_name: consent-frontend
+    container_name: consent-frontend-1
     ports:
       - "80:80"
     depends_on:
-      - backend
+      - api-backend
 
 volumes:
   pgdata:
