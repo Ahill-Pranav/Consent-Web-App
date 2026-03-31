@@ -34,6 +34,7 @@ public class ConsentService {
     private final ObjectMapper objectMapper;
 
     @Transactional
+    @SuppressWarnings("null")
     public ConsentResponse signConsent(Long templateId, String userEmail, String ipAddress, String userAgent) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
@@ -64,6 +65,7 @@ public class ConsentService {
     }
 
     @Transactional(readOnly = true)
+    @SuppressWarnings("null")
     public List<ConsentResponse> getMyConsents(String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));

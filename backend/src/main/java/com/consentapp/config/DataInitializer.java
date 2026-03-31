@@ -18,6 +18,7 @@ public class DataInitializer implements CommandLineRunner {
     private final PasswordEncoder passwordEncoder;
 
     @Override
+    @SuppressWarnings("null")
     public void run(String... args) throws Exception {
         // 1. Ensure admin exists with correct credentials
         userRepository.findByEmail("admin@gmail.com").ifPresentOrElse(
@@ -34,10 +35,10 @@ public class DataInitializer implements CommandLineRunner {
                             .role(Role.ADMIN)
                             .build();
                     userRepository.save(admin);
-                }
-        );
+                });
 
-        // 2. Demote all other admins to MENTOR (to avoid FK constraints but ensure only one admin)
+        // 2. Demote all other admins to MENTOR (to avoid FK constraints but ensure only
+        // one admin)
         List<User> allAdmins = userRepository.findByRole(Role.ADMIN);
         for (User admin : allAdmins) {
             if (!admin.getEmail().equalsIgnoreCase("admin@gmail.com")) {
@@ -52,9 +53,12 @@ public class DataInitializer implements CommandLineRunner {
         createMentorIfNotExists("mentor3@gmail.com", "David Mentor");
 
         // 4. Populate default Students
-        User mentor1 = userRepository.findByEmail("mentor1@gmail.com").orElse(null);
-        User mentor2 = userRepository.findByEmail("mentor2@gmail.com").orElse(null);
-        
+        User mentor1 = userRepository.findByEmail("mentor1@gmail.com")
+                .orElseThrow(() -> new RuntimeException("Mentor1 not found"));
+
+        User mentor2 = userRepository.findByEmail("mentor2@gmail.com")
+                .orElseThrow(() -> new RuntimeException("Mentor2 not found"));
+
         createStudentIfNotExists("student1@gmail.com", "Alice Student", mentor1);
         createStudentIfNotExists("student2@gmail.com", "Bob Student", mentor1);
         createStudentIfNotExists("student3@gmail.com", "Charlie Student", mentor2);
@@ -62,6 +66,7 @@ public class DataInitializer implements CommandLineRunner {
         createStudentIfNotExists("student5@gmail.com", "Eve Student", mentor2);
     }
 
+    @SuppressWarnings("null")
     private void createMentorIfNotExists(String email, String name) {
         if (!userRepository.existsByEmail(email)) {
             User mentor = User.builder()
@@ -74,6 +79,7 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
+    @SuppressWarnings("null")
     private void createStudentIfNotExists(String email, String name, User mentor) {
         if (!userRepository.existsByEmail(email)) {
             User student = User.builder()

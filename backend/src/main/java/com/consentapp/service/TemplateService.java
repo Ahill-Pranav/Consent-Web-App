@@ -6,7 +6,6 @@ import com.consentapp.entity.ConsentTemplate;
 import com.consentapp.entity.Role;
 import com.consentapp.entity.User;
 import com.consentapp.exception.ResourceNotFoundException;
-import com.consentapp.exception.ValidationException;
 import com.consentapp.repository.ConsentTemplateRepository;
 import com.consentapp.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +25,7 @@ public class TemplateService {
     private final UserRepository userRepository;
 
     @Transactional
+    @SuppressWarnings("null")
     public TemplateResponse createTemplate(TemplateRequest request, String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
@@ -49,6 +49,7 @@ public class TemplateService {
     }
 
     @Transactional
+    @SuppressWarnings("null")
     public TemplateResponse updateTemplate(Long id, TemplateRequest request) {
         ConsentTemplate oldTemplate = templateRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Template not found with id: " + id));
@@ -105,6 +106,7 @@ public class TemplateService {
     }
 
     @Transactional(readOnly = true)
+    @SuppressWarnings("null")
     public TemplateResponse getTemplateById(Long id) {
         ConsentTemplate template = templateRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Template not found with id: " + id));
@@ -112,6 +114,7 @@ public class TemplateService {
     }
 
     @Transactional
+    @SuppressWarnings("null")
     public void deleteTemplate(Long id) {
         ConsentTemplate template = templateRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Template not found with id: " + id));

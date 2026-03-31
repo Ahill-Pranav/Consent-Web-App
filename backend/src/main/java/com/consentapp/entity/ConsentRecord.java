@@ -11,6 +11,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Entity representing a signed consent form record.
+ */
 public class ConsentRecord {
 
     @Id

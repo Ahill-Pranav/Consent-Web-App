@@ -34,6 +34,7 @@ public class AuthController {
     private final UserDetailsService userDetailsService;
 
     @PostMapping("/register")
+    @SuppressWarnings("null")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new ValidationException("Email is already in use.");
@@ -111,6 +112,7 @@ public class AuthController {
     }
 
     @GetMapping("/my-students")
+    @SuppressWarnings("null")
     public ResponseEntity<List<Map<String, Object>>> getMyStudents(org.springframework.security.core.Authentication authentication) {
         User mentor = userRepository.findByEmail(authentication.getName())
                 .orElseThrow(() -> new ValidationException("Mentor not found"));
@@ -147,6 +149,7 @@ public class AuthController {
 
     @DeleteMapping("/users/{id}")
     @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    @SuppressWarnings("null")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         if (!userRepository.existsById(id)) {
             throw new ValidationException("User not found");
