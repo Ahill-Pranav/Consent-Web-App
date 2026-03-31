@@ -41,4 +41,5 @@ public class ConsentRecord {
     @Column(name = "audit_log", columnDefinition = "TEXT")
     private String auditLog;
 
+    public String getSignatureHash() { return signatureHash; }
 }

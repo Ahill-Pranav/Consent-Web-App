@@ -1,18 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Login = () => {
-    const { login } = useAuth();
-    const [email, setEmail] = useState('user@consent.app');
-    const [password, setPassword] = useState('password');
+    const { login, isAuthenticated } = useAuth();
+    const navigate = useNavigate();
+    
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const [role, setRole] = useState('user');
+    const [demoRole, setDemoRole] = useState('');
 
-    const handleRoleChange = (selectedRole) => {
-        setRole(selectedRole);
-        setEmail(selectedRole === 'admin' ? 'admin@consent.app' : 'user@consent.app');
+    useEffect(() => {
+        if (isAuthenticated) {
+            navigate('/dashboard');
+        }
+    }, [isAuthenticated, navigate]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
+        }, 100);
+        return () => clearTimeout(timer);
+    }, []);
+
+    const handleDemoRole = (role) => {
+        setDemoRole(role);
+        if (role === 'admin') setEmail('admin@consent.app');
+        if (role === 'mentor') setEmail('mentor@consent.app');
+        if (role === 'student') setEmail('student@consent.app');
+        setPassword('password'); // Setup based on mock users
     };
 
     const handleSubmit = async (e) => {
@@ -21,93 +39,98 @@ const Login = () => {
         setLoading(true);
         try {
             await login(email, password);
+            navigate('/dashboard');
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to login');
+            setError(err.response?.data?.message || 'Failed to login. Check credentials.');
         } finally {
             setLoading(false);
         }
     };
 
-    // Add the reveal animation class to elements on mount
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
-        }, 100);
-        return () => clearTimeout(timer);
-    }, []);
-
     return (
-        <div id="login-screen" className="screen active" style={{ minHeight: '100vh', display: 'flex' }}>
-            <div className="login-split">
-                {/* Left Side */}
-                <div className="login-left">
-                    <div className="login-brand reveal">Consent<span>Flow</span><br />Platform</div>
-                    <p className="login-tagline reveal" style={{ transitionDelay: '0.1s' }}>
-                        Secure, traceable digital consent forms for healthcare, research, and beyond.
-                    </p>
-                    <div className="login-features reveal" style={{ transitionDelay: '0.2s' }}>
-                        <div className="login-feature"><div className="login-feature-dot"></div>Tamper-proof audit trails on every signature</div>
-                        <div className="login-feature"><div className="login-feature-dot"></div>Multi-role access for admins and participants</div>
-                        <div className="login-feature"><div className="login-feature-dot"></div>Real-time notifications and form tracking</div>
-                        <div className="login-feature"><div className="login-feature-dot"></div>Legally compliant digital consent records</div>
+        <div className="min-h-screen flex w-full relative overflow-hidden bg-forest-dark">
+            {/* Animated Background Orbs */}
+            <div className="absolute -top-[150px] -right-[100px] w-[500px] h-[500px] bg-amber/20 rounded-full blur-3xl animate-pulse-glow pointer-events-none"></div>
+            <div className="absolute -bottom-[150px] -left-[100px] w-[600px] h-[600px] bg-sage/20 rounded-full blur-3xl animate-pulse-glow-reverse pointer-events-none"></div>
+
+            <div className="w-full h-full flex flex-col md:flex-row max-w-[1440px] mx-auto z-10">
+                {/* Left Side Marketing */}
+                <div className="md:w-1/2 p-12 md:p-20 flex flex-col justify-center relative">
+                    <div className="reveal">
+                        <h1 className="text-5xl md:text-7xl font-serif text-white leading-tight mb-6">
+                            Consent<span className="text-amber">Flow</span><br />Platform
+                        </h1>
+                        <p className="text-sage-light text-lg md:text-xl max-w-md font-light leading-relaxed mb-12">
+                            Secure, version-controlled digital consent forms with multi-tier role approvals.
+                        </p>
+
+                        <div className="space-y-6">
+                            {[
+                                "Tamper-proof audit trails for every signature",
+                                "Hierarchical approvals (Admin, Mentor, Student)",
+                                "Version-based document locking",
+                                "Zero-friction onboarding"
+                            ].map((feature, idx) => (
+                                <div key={idx} className="flex items-center text-white/80 gap-4">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-amber shadow-[0_0_10px_rgba(232,146,58,0.8)]"></div>
+                                    <span className="font-medium tracking-wide">{feature}</span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
-                {/* Right Side */}
-                <div className="login-right">
-                    <div className="login-card reveal" style={{ transitionDelay: '0.3s' }}>
-                        <div className="login-heading" style={{ fontFamily: "'DM Serif Display', serif", fontSize: '2.2rem', color: 'var(--forest-dark)', marginBottom: '8px' }}>Welcome back.</div>
-                        <p className="login-subheading" style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginBottom: '40px' }}>Sign in to continue to your portal</p>
+                {/* Right Side Auth Form */}
+                <div className="md:w-1/2 flex items-center justify-center p-8">
+                    <div className="glass w-full max-w-[480px] p-10 md:p-14 rounded-3xl reveal" style={{ transitionDelay: '0.2s' }}>
+                        <h2 className="text-3xl font-serif text-forest-dark mb-2">Welcome Back</h2>
+                        <p className="text-text-muted mb-8">Please enter your details to sign in.</p>
 
-                        <div className="role-toggle" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '28px', background: 'var(--cream)', padding: '6px', borderRadius: '14px' }}>
-                            <button
-                                type="button"
-                                className={`role-btn ${role === 'user' ? 'active' : ''}`}
-                                onClick={() => handleRoleChange('user')}
-                                style={{
-                                    padding: '10px', border: 'none', borderRadius: '10px', fontFamily: "'Outfit', sans-serif", fontSize: '0.9rem', fontWeight: 500, cursor: 'pointer', transition: 'all 0.25s',
-                                    background: role === 'user' ? 'var(--forest)' : 'transparent',
-                                    color: role === 'user' ? 'white' : 'var(--text-muted)',
-                                    boxShadow: role === 'user' ? '0 4px 12px rgba(27,77,62,0.3)' : 'none'
-                                }}
-                            >
-                                👤 Participant
-                            </button>
-                            <button
-                                type="button"
-                                className={`role-btn ${role === 'admin' ? 'active' : ''}`}
-                                onClick={() => handleRoleChange('admin')}
-                                style={{
-                                    padding: '10px', border: 'none', borderRadius: '10px', fontFamily: "'Outfit', sans-serif", fontSize: '0.9rem', fontWeight: 500, cursor: 'pointer', transition: 'all 0.25s',
-                                    background: role === 'admin' ? 'var(--forest)' : 'transparent',
-                                    color: role === 'admin' ? 'white' : 'var(--text-muted)',
-                                    boxShadow: role === 'admin' ? '0 4px 12px rgba(27,77,62,0.3)' : 'none'
-                                }}
-                            >
-                                🛡 Admin
-                            </button>
+                        {/* Demo Accounts Toggle */}
+                        <div className="flex gap-2 mb-8 bg-forest/5 p-1.5 rounded-2xl">
+                            {['student', 'mentor', 'admin'].map((role) => (
+                                <button
+                                    key={role}
+                                    type="button"
+                                    onClick={() => handleDemoRole(role)}
+                                    className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-xl transition-all duration-300 ${
+                                        demoRole === role 
+                                        ? 'bg-white text-forest shadow-sm' 
+                                        : 'text-text-muted hover:text-forest'
+                                    }`}
+                                >
+                                    {role}
+                                </button>
+                            ))}
                         </div>
 
                         {error && (
-                            <div style={{ background: 'rgba(180,30,30,0.1)', color: '#B41E1E', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '0.9rem' }}>
+                            <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm font-medium flex items-center gap-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
                                 {error}
                             </div>
                         )}
 
-                        <form onSubmit={handleSubmit}>
-                            <div className="form-group">
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            <div>
                                 <label className="form-label">Email Address</label>
                                 <input
                                     type="email"
                                     className="form-input"
-                                    placeholder="name@organisation.com"
+                                    placeholder="name@university.edu"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     required
                                 />
                             </div>
-                            <div className="form-group">
-                                <label className="form-label">Password</label>
+                            
+                            <div>
+                                <div className="flex justify-between mb-2">
+                                    <label className="form-label !mb-0">Password</label>
+                                    <a href="#" className="text-xs font-semibold text-amber hover:text-amber-light">Forgot?</a>
+                                </div>
                                 <input
                                     type="password"
                                     className="form-input"
@@ -118,113 +141,28 @@ const Login = () => {
                                 />
                             </div>
 
-                            <button type="submit" className="btn-primary" disabled={loading} style={{ marginBottom: '20px' }}>
-                                <span>{loading ? 'Signing In...' : 'Sign In'}</span>
+                            <button type="submit" className="btn-primary mt-4" disabled={loading}>
+                                {loading ? (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Signing In...
+                                    </span>
+                                ) : "Sign In"}
                             </button>
                         </form>
 
-                        <div className="login-footer" style={{ textAlign: 'center', fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-                            Don't have an account? <Link to="/register" style={{ color: 'var(--amber)', fontWeight: 600, textDecoration: 'none' }}>Register here</Link>
-                        </div>
+                        <p className="mt-8 text-center text-sm text-text-muted">
+                            Don't have an account?{' '}
+                            <Link to="/register" className="font-bold text-forest hover:text-sage transition-colors">
+                                Register Here
+                            </Link>
+                        </p>
                     </div>
                 </div>
             </div>
-
-            {/* Inline styles for the specific login layout that shouldn't go in global index.css if they are highly specific to this page layout */}
-            <style>{`
-        .login-split {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          min-height: 100vh;
-          width: 100%;
-        }
-        .login-left {
-          background: var(--forest-dark);
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          padding: 80px 64px;
-          position: relative;
-          overflow: hidden;
-        }
-        .login-left::before {
-          content: '';
-          position: absolute;
-          top: -100px; right: -100px;
-          width: 400px; height: 400px;
-          background: radial-gradient(circle, rgba(232,146,58,0.25) 0%, transparent 70%);
-          border-radius: 50%;
-          animation: pulse-glow 4s ease-in-out infinite;
-        }
-        .login-left::after {
-          content: '';
-          position: absolute;
-          bottom: -80px; left: -80px;
-          width: 300px; height: 300px;
-          background: radial-gradient(circle, rgba(90,138,117,0.3) 0%, transparent 70%);
-          border-radius: 50%;
-          animation: pulse-glow 5s ease-in-out infinite reverse;
-        }
-        .login-brand {
-          font-family: 'DM Serif Display', serif;
-          font-size: 2.6rem;
-          color: white;
-          line-height: 1.1;
-          margin-bottom: 20px;
-          position: relative;
-          z-index: 2;
-        }
-        .login-brand span { color: var(--amber-light); }
-        .login-tagline {
-          font-size: 1rem;
-          color: var(--sage-light);
-          line-height: 1.7;
-          max-width: 360px;
-          position: relative;
-          z-index: 2;
-        }
-        .login-features {
-          margin-top: 48px;
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-          position: relative;
-          z-index: 2;
-        }
-        .login-feature {
-          display: flex;
-          align-items: center;
-          gap: 14px;
-          color: rgba(255,255,255,0.8);
-          font-size: 0.9rem;
-        }
-        .login-feature-dot {
-          width: 8px; height: 8px;
-          background: var(--amber);
-          border-radius: 50%;
-          flex-shrink: 0;
-        }
-        .login-right {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 60px;
-          background: var(--warm-white);
-        }
-        .login-card {
-          width: 100%;
-          max-width: 420px;
-        }
-        @media (max-width: 900px) {
-          .login-split {
-            grid-template-columns: 1fr;
-          }
-          .login-left {
-            padding: 40px;
-            min-height: 300px;
-          }
-        }
-      `}</style>
         </div>
     );
 };

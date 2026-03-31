@@ -11,6 +11,7 @@ import java.util.Optional;
 public interface ConsentRecordRepository extends JpaRepository<ConsentRecord, Long> {
     List<ConsentRecord> findByUserId(Long userId);
     List<ConsentRecord> findByTemplateId(Long templateId);
+    List<ConsentRecord> findByUser(com.consentapp.entity.User user);
     Optional<ConsentRecord> findByUserIdAndTemplateId(Long userId, Long templateId);
     boolean existsByUserIdAndTemplateId(Long userId, Long templateId);
 }

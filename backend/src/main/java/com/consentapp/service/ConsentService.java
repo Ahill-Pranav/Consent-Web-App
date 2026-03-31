@@ -16,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
@@ -29,7 +28,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ConsentService {
 
-    private final ConsentRecordRepository consentRepository;
+    private final ConsentRecordRepository consentRecordRepository;
     private final ConsentTemplateRepository templateRepository;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
@@ -40,31 +39,27 @@ public class ConsentService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         ConsentTemplate template = templateRepository.findById(templateId)
-                .orElseThrow(() -> new ResourceNotFoundException("Template not found with id: " + templateId));
+                .orElseThrow(() -> new ResourceNotFoundException("Template not found"));
 
-        if (!template.getIsActive()) {
-            throw new ValidationException("Cannot sign an inactive template.");
+        // Verify that the template is assigned to the user
+        if (!template.getAssignedStudents().contains(user)) {
+            throw new ValidationException("You are not assigned to this consent form.");
         }
 
-        if (consentRepository.existsByUserIdAndTemplateId(user.getId(), template.getId())) {
-            throw new ValidationException("User has already signed this template.");
-        }
-
-        LocalDateTime now = LocalDateTime.now();
-        String signatureHash = generateSignatureHash(user.getId(), template.getId(), now.toString());
-        String auditLog = generateAuditLog(userAgent, ipAddress, now.toString(), "SIGNED");
+        String auditLog = generateAuditLog(user, template, "SIGN", userAgent);
+        String signatureHash = generateSignatureHash(user, template, auditLog);
 
         ConsentRecord record = ConsentRecord.builder()
                 .template(template)
                 .user(user)
-                .signedAt(now)
+                .signedAt(LocalDateTime.now())
                 .ipAddress(ipAddress)
                 .status(ConsentStatus.SIGNED)
                 .signatureHash(signatureHash)
                 .auditLog(auditLog)
                 .build();
 
-        consentRepository.save(record);
+        consentRecordRepository.save(record);
         return mapToResponse(record);
     }
 
@@ -72,37 +67,39 @@ public class ConsentService {
     public List<ConsentResponse> getMyConsents(String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        return consentRepository.findByUserId(user.getId()).stream()
+        return consentRecordRepository.findByUser(user).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public List<ConsentResponse> getAllConsents() {
-        return consentRepository.findAll().stream()
+        return consentRecordRepository.findAll().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
-    private String generateSignatureHash(Long userId, Long templateId, String timestamp) {
+    private String generateSignatureHash(User user, ConsentTemplate template, String auditLog) {
         try {
-            String input = userId + "-" + templateId + "-" + timestamp;
+            String data = user.getEmail() + template.getId() + template.getVersion() + auditLog + LocalDateTime.now();
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] encodedhash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
-            return bytesToHex(encodedhash);
+            byte[] hash = digest.digest(data.getBytes());
+            return bytesToHex(hash);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Error generating signature hash", e);
         }
     }
 
-    private String generateAuditLog(String userAgent, String ipAddress, String timestamp, String action) {
+    private String generateAuditLog(User user, ConsentTemplate template, String action, String userAgent) {
         try {
-            Map<String, String> auditData = new HashMap<>();
-            auditData.put("userAgent", userAgent != null ? userAgent : "Unknown");
-            auditData.put("ip", ipAddress != null ? ipAddress : "Unknown");
-            auditData.put("timestamp", timestamp);
+            Map<String, Object> auditData = new HashMap<>();
+            auditData.put("timestamp", LocalDateTime.now().toString());
+            auditData.put("userId", user.getId());
+            auditData.put("userEmail", user.getEmail());
+            auditData.put("templateId", template.getId());
+            auditData.put("templateVersion", template.getVersion());
             auditData.put("action", action);
+            auditData.put("userAgent", userAgent);
             return objectMapper.writeValueAsString(auditData);
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Error generating JSON audit log", e);
@@ -122,15 +119,15 @@ public class ConsentService {
     }
 
     private ConsentResponse mapToResponse(ConsentRecord record) {
-        return ConsentResponse.builder()
-                .id(record.getId())
-                .templateId(record.getTemplate().getId())
-                .userId(record.getUser().getId())
-                .signedAt(record.getSignedAt())
-                .ipAddress(record.getIpAddress())
-                .status(record.getStatus())
-                .signatureHash(record.getSignatureHash())
-                .auditLog(record.getAuditLog())
-                .build();
+        ConsentResponse response = new ConsentResponse();
+        response.setId(record.getId());
+        response.setTemplateId(record.getTemplate().getId());
+        response.setUserId(record.getUser().getId());
+        response.setSignedAt(record.getSignedAt());
+        response.setIpAddress(record.getIpAddress());
+        response.setStatus(record.getStatus());
+        response.setSignatureHash(record.getSignatureHash());
+        response.setAuditLog(record.getAuditLog());
+        return response;
     }
 }

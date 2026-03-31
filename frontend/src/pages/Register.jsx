@@ -1,205 +1,193 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import api from '../api/axiosConfig';
 
 const Register = () => {
-    const { register } = useAuth();
+    const { register, isAuthenticated } = useAuth();
+    const navigate = useNavigate();
+
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [role, setRole] = useState('STUDENT');
+    const [mentorId, setMentorId] = useState('');
+    
+    const [mentors, setMentors] = useState([]);
+    
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            navigate('/dashboard');
+        }
+    }, [isAuthenticated, navigate]);
+
+    useEffect(() => {
+        // Fetch active mentors for dropdown
+        const fetchMentors = async () => {
+            try {
+                const response = await api.get('/auth/mentors');
+                setMentors(response.data);
+            } catch (err) {
+                console.error("Failed to fetch mentors", err);
+            }
+        };
+        fetchMentors();
+    }, []);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            document.querySelectorAll('.reveal').forEach((el) => el.classList.add('visible'));
+        }, 100);
+        return () => clearTimeout(timer);
+    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+
+        if (role === 'STUDENT' && !mentorId) {
+            setError("Students must select an assigned Mentor.");
+            return;
+        }
+
         setLoading(true);
         try {
-            await register(name, email, password);
+            await register(name, email, password, role, mentorId || null);
+            navigate('/dashboard');
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to register');
+            setError(err.response?.data?.message || 'Failed to register account');
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
-        }, 100);
-        return () => clearTimeout(timer);
-    }, []);
-
     return (
-        <div id="login-screen" className="screen active" style={{ minHeight: '100vh', display: 'flex' }}>
-            <div className="login-split">
-                {/* Left Side */}
-                <div className="login-left">
-                    <div className="login-brand reveal">Consent<span>Flow</span><br />Platform</div>
-                    <p className="login-tagline reveal" style={{ transitionDelay: '0.1s' }}>
-                        Join us to securely manage digital consents for healthcare, research, and beyond.
-                    </p>
-                    <div className="login-features reveal" style={{ transitionDelay: '0.2s' }}>
-                        <div className="login-feature"><div className="login-feature-dot"></div>Tamper-proof audit trails on every signature</div>
-                        <div className="login-feature"><div className="login-feature-dot"></div>Multi-role access for admins and participants</div>
-                        <div className="login-feature"><div className="login-feature-dot"></div>Real-time notifications and form tracking</div>
-                        <div className="login-feature"><div className="login-feature-dot"></div>Legally compliant digital consent records</div>
+        <div className="min-h-screen flex w-full relative overflow-hidden bg-forest-dark">
+            {/* Animated Background Orbs */}
+            <div className="absolute top-[10%] left-[20%] w-[500px] h-[500px] bg-amber/20 rounded-full blur-[120px] animate-pulse-glow pointer-events-none"></div>
+            <div className="absolute bottom-[10%] right-[10%] w-[600px] h-[600px] bg-sage/20 rounded-full blur-[140px] animate-pulse-glow-reverse pointer-events-none"></div>
+
+            <div className="w-full h-full flex flex-col justify-center items-center py-12 px-4 z-10 min-h-screen">
+                <Link to="/login" className="absolute top-8 left-8 text-white/50 hover:text-white flex items-center gap-2 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                    Back to Login
+                </Link>
+
+                <div className="glass w-full max-w-[540px] p-8 md:p-12 rounded-3xl reveal shadow-2xl">
+                    <div className="text-center mb-10">
+                        <h2 className="text-4xl font-serif text-forest-dark mb-3">Create Account</h2>
+                        <p className="text-text-muted">Join the secure consent platform today.</p>
                     </div>
-                </div>
 
-                {/* Right Side */}
-                <div className="login-right">
-                    <div className="login-card reveal" style={{ transitionDelay: '0.3s' }}>
-                        <div className="login-heading" style={{ fontFamily: "'DM Serif Display', serif", fontSize: '2.2rem', color: 'var(--forest-dark)', marginBottom: '8px' }}>Create an Account</div>
-                        <p className="login-subheading" style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginBottom: '40px' }}>Join us to manage digital consents</p>
+                    {error && (
+                        <div className="mb-8 p-4 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm font-medium flex items-center gap-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                            {error}
+                        </div>
+                    )}
 
-                        {error && (
-                            <div style={{ background: 'rgba(180,30,30,0.1)', color: '#B41E1E', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '0.9rem' }}>
-                                {error}
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <div className="grid grid-cols-2 gap-4">
+                            <button
+                                type="button"
+                                onClick={() => setRole('STUDENT')}
+                                className={`px-4 py-3 rounded-xl font-bold uppercase tracking-wider text-xs transition-all duration-300 border-2 ${
+                                    role === 'STUDENT'
+                                    ? 'border-forest bg-forest text-white'
+                                    : 'border-forest/10 bg-white/50 text-text-muted hover:border-forest/30'
+                                }`}
+                            >
+                                Student
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setRole('MENTOR');
+                                    setMentorId(''); // wipe mentor ID selection if switching to mentor
+                                }}
+                                className={`px-4 py-3 rounded-xl font-bold uppercase tracking-wider text-xs transition-all duration-300 border-2 ${
+                                    role === 'MENTOR'
+                                    ? 'border-amber bg-amber text-white shadow-[0_4px_20px_rgba(232,146,58,0.3)]'
+                                    : 'border-forest/10 bg-white/50 text-text-muted hover:border-amber/30'
+                                }`}
+                            >
+                                Mentor / Admin
+                            </button>
+                        </div>
+
+                        <div>
+                            <label className="form-label">Full Name</label>
+                            <input
+                                type="text"
+                                className="form-input"
+                                placeholder="Aarav Sharma"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                required
+                            />
+                        </div>
+
+                        <div>
+                            <label className="form-label">Email Address</label>
+                            <input
+                                type="email"
+                                className="form-input"
+                                placeholder="name@university.edu"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                            />
+                        </div>
+
+                        <div>
+                            <label className="form-label">Password</label>
+                            <input
+                                type="password"
+                                className="form-input"
+                                placeholder="••••••••"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                minLength="6"
+                                required
+                            />
+                        </div>
+
+                        {/* Conditional Dropdown for Students */}
+                        {role === 'STUDENT' && (
+                            <div className="reveal">
+                                <label className="form-label text-amber">Assign Mentor *</label>
+                                <select 
+                                    className="form-input bg-white cursor-pointer appearance-none"
+                                    value={mentorId}
+                                    onChange={(e) => setMentorId(e.target.value)}
+                                    required
+                                >
+                                    <option value="" disabled>Select your managing mentor</option>
+                                    {mentors.map(m => (
+                                        <option key={m.id} value={m.id}>{m.name}</option>
+                                    ))}
+                                </select>
                             </div>
                         )}
 
-                        <form onSubmit={handleSubmit}>
-                            <div className="form-group">
-                                <label className="form-label">Full Name</label>
-                                <input
-                                    type="text"
-                                    className="form-input"
-                                    placeholder="John Doe"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    required
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label className="form-label">Email Address</label>
-                                <input
-                                    type="email"
-                                    className="form-input"
-                                    placeholder="name@organisation.com"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label className="form-label">Password</label>
-                                <input
-                                    type="password"
-                                    className="form-input"
-                                    placeholder="••••••••"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                />
-                            </div>
-
-                            <button type="submit" className="btn-primary" disabled={loading} style={{ marginBottom: '20px' }}>
-                                <span>{loading ? 'Registering...' : 'Register'}</span>
-                            </button>
-                        </form>
-
-                        <div className="login-footer" style={{ textAlign: 'center', fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-                            Already have an account? <Link to="/login" style={{ color: 'var(--amber)', fontWeight: 600, textDecoration: 'none' }}>Sign in</Link>
-                        </div>
-                    </div>
+                        <button type="submit" className="btn-primary mt-6 tracking-wide" disabled={loading}>
+                            {loading ? 'Creating Account...' : 'Finish Registration'}
+                        </button>
+                    </form>
+                    
+                    <p className="mt-8 text-center text-sm font-medium text-text-muted">
+                        Already registered?{' '}
+                        <Link to="/login" className="font-bold text-forest hover:text-amber transition-colors">
+                            Sign in to your portal
+                        </Link>
+                    </p>
                 </div>
             </div>
-
-            <style>{`
-        .login-split {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          min-height: 100vh;
-          width: 100%;
-        }
-        .login-left {
-          background: var(--forest-dark);
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          padding: 80px 64px;
-          position: relative;
-          overflow: hidden;
-        }
-        .login-left::before {
-          content: '';
-          position: absolute;
-          top: -100px; right: -100px;
-          width: 400px; height: 400px;
-          background: radial-gradient(circle, rgba(232,146,58,0.25) 0%, transparent 70%);
-          border-radius: 50%;
-          animation: pulse-glow 4s ease-in-out infinite;
-        }
-        .login-left::after {
-          content: '';
-          position: absolute;
-          bottom: -80px; left: -80px;
-          width: 300px; height: 300px;
-          background: radial-gradient(circle, rgba(90,138,117,0.3) 0%, transparent 70%);
-          border-radius: 50%;
-          animation: pulse-glow 5s ease-in-out infinite reverse;
-        }
-        .login-brand {
-          font-family: 'DM Serif Display', serif;
-          font-size: 2.6rem;
-          color: white;
-          line-height: 1.1;
-          margin-bottom: 20px;
-          position: relative;
-          z-index: 2;
-        }
-        .login-brand span { color: var(--amber-light); }
-        .login-tagline {
-          font-size: 1rem;
-          color: var(--sage-light);
-          line-height: 1.7;
-          max-width: 360px;
-          position: relative;
-          z-index: 2;
-        }
-        .login-features {
-          margin-top: 48px;
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-          position: relative;
-          z-index: 2;
-        }
-        .login-feature {
-          display: flex;
-          align-items: center;
-          gap: 14px;
-          color: rgba(255,255,255,0.8);
-          font-size: 0.9rem;
-        }
-        .login-feature-dot {
-          width: 8px; height: 8px;
-          background: var(--amber);
-          border-radius: 50%;
-          flex-shrink: 0;
-        }
-        .login-right {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 60px;
-          background: var(--warm-white);
-        }
-        .login-card {
-          width: 100%;
-          max-width: 420px;
-        }
-        @media (max-width: 900px) {
-          .login-split {
-            grid-template-columns: 1fr;
-          }
-          .login-left {
-            padding: 40px;
-            min-height: 300px;
-          }
-        }
-      `}</style>
         </div>
     );
 };

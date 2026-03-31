@@ -21,7 +21,7 @@ public class TemplateController {
     private final TemplateService templateService;
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('MENTOR')")
     public ResponseEntity<TemplateResponse> createTemplate(
             @Valid @RequestBody TemplateRequest request,
             Authentication authentication) {
@@ -31,7 +31,7 @@ public class TemplateController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MENTOR')")
     public ResponseEntity<TemplateResponse> updateTemplate(
             @PathVariable Long id,
             @Valid @RequestBody TemplateRequest request) {
@@ -46,7 +46,7 @@ public class TemplateController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MENTOR', 'STUDENT')")
     public ResponseEntity<List<TemplateResponse>> getAllTemplates(Authentication authentication) {
         // If the user has only USER role, they should only see active templates based
         // on requirements
@@ -58,12 +58,12 @@ public class TemplateController {
         if (isAdmin) {
             return ResponseEntity.ok(templateService.getAllTemplates());
         } else {
-            return ResponseEntity.ok(templateService.getActiveTemplates());
+            return ResponseEntity.ok(templateService.getActiveTemplates(authentication.getName()));
         }
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MENTOR', 'STUDENT')")
     public ResponseEntity<TemplateResponse> getTemplateById(@PathVariable Long id) {
         return ResponseEntity.ok(templateService.getTemplateById(id));
     }

@@ -1,39 +1,50 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
-import { useAuth } from './context/AuthContext'
-import Login from './pages/Login'
-import Register from './pages/Register'
-import AdminDashboard from './pages/admin/AdminDashboard'
-import UserDashboard from './pages/user/UserDashboard'
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
+import Login from './pages/Login';
+import Register from './pages/Register';
 
-const ProtectedRoute = ({ children, requireAdmin = false }) => {
-  const { isAuthenticated, isAdmin, loading } = useAuth();
+import AdminDashboard from './pages/admin/AdminDashboard';
+import MentorDashboard from './pages/mentor/MentorDashboard';
+import StudentDashboard from './pages/student/StudentDashboard';
+import Navbar from './components/Navbar';
 
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated, loading } = useAuth();
   if (loading) return <div>Loading...</div>;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (requireAdmin && !isAdmin) return <Navigate to="/user/templates" replace />;
-
   return children;
 };
 
 const PublicRoute = ({ children }) => {
-  const { isAuthenticated, isAdmin, loading } = useAuth();
-
+  const { isAuthenticated, loading } = useAuth();
   if (loading) return <div>Loading...</div>;
   if (isAuthenticated) {
-    return <Navigate to={isAdmin ? "/admin/templates" : "/user/templates"} replace />;
+    return <Navigate to="/dashboard" replace />;
   }
-
   return children;
 };
 
-import { ToastProvider } from './components/ToastProvider'
-import AnimatedBackground from './components/AnimatedBackground'
+const DashboardRouter = () => {
+  const { isAdmin, isMentor, isStudent } = useAuth();
+
+  const getDashboard = () => {
+    if (isAdmin) return <AdminDashboard />;
+    if (isMentor) return <MentorDashboard />;
+    if (isStudent) return <StudentDashboard />;
+    return <Navigate to="/login" replace />;
+  };
+
+  return (
+    <>
+      <Navbar />
+      {getDashboard()}
+    </>
+  );
+};
 
 function App() {
   return (
-    <ToastProvider>
       <div className="app-container">
-        <AnimatedBackground />
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
 
@@ -44,23 +55,15 @@ function App() {
             <PublicRoute><Register /></PublicRoute>
           } />
 
-          {/* Admin Routes */}
-          <Route path="/admin/*" element={
-            <ProtectedRoute requireAdmin={true}>
-              <AdminDashboard />
-            </ProtectedRoute>
-          } />
-
-          {/* User Routes */}
-          <Route path="/user/*" element={
+          <Route path="/dashboard/*" element={
             <ProtectedRoute>
-              <UserDashboard />
+              <DashboardRouter />
             </ProtectedRoute>
           } />
+          
         </Routes>
       </div>
-    </ToastProvider>
   )
 }
 
-export default App
+export default App;

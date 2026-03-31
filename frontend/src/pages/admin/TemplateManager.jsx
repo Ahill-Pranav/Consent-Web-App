@@ -34,11 +34,11 @@ const TemplateManager = ({ setTemplateCount }) => {
                 title: template.title,
                 description: template.description || '',
                 content: template.content,
-                isActive: template.isActive
+                active: template.active
             });
         } else {
             setCurrentTemplate(null);
-            setFormData({ title: '', description: '', content: '', isActive: true });
+            setFormData({ title: '', description: '', content: '', active: true });
         }
         setIsModalOpen(true);
     };
@@ -81,9 +81,9 @@ const TemplateManager = ({ setTemplateCount }) => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                 <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1.5rem', color: 'var(--forest-dark)' }}>Consent Templates</h2>
-                <button onClick={() => openModal()} className="btn-primary" style={{ padding: '10px 20px', fontSize: '0.9rem' }}>
-                    + Create New
-                </button>
+                <div className="text-xs text-text-muted italic bg-amber/5 px-4 py-2 rounded-lg border border-amber/10">
+                    Administrators can only manage and delete existing mentor forms.
+                </div>
             </div>
 
             <div className="admin-table-container">
@@ -98,13 +98,13 @@ const TemplateManager = ({ setTemplateCount }) => {
                     </thead>
                     <tbody>
                         {templates.map(t => (
-                            <tr key={t.id} className={t.isActive ? 'row-active' : 'row-inactive'} style={{ position: 'relative' }}>
+                            <tr key={t.id} className={t.active ? 'row-active' : 'row-inactive'} style={{ position: 'relative' }}>
                                 <td style={{ position: 'relative', paddingLeft: '32px' }}>
                                     <div style={{ fontWeight: 600, color: 'var(--forest-dark)', marginBottom: '4px' }}>{t.title}</div>
                                     <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{t.description || "No description provided."}</div>
                                 </td>
                                 <td>
-                                    {t.isActive ?
+                                    {t.active ?
                                         <span className="status-badge status-signed" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: 'var(--forest)' }}></span>Active</span> :
                                         <span className="status-badge status-expired" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: '#B41E1E', animation: 'pulse-dot 2s infinite' }}></span>Draft</span>
                                     }
@@ -202,12 +202,12 @@ const TemplateManager = ({ setTemplateCount }) => {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '16px', background: 'rgba(27,77,62,0.04)', padding: '16px 20px', borderRadius: '12px', border: '1px solid var(--border)' }}>
                                     <input
                                         type="checkbox"
-                                        id="isActive"
-                                        checked={formData.isActive}
-                                        onChange={e => setFormData({ ...formData, isActive: e.target.checked })}
+                                        id="active"
+                                        checked={formData.active}
+                                        onChange={e => setFormData({ ...formData, active: e.target.checked })}
                                         style={{ width: '18px', height: '18px', accentColor: 'var(--forest)' }}
                                     />
-                                    <label htmlFor="isActive" style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--forest-dark)', cursor: 'pointer' }}>
+                                    <label htmlFor="active" style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--forest-dark)', cursor: 'pointer' }}>
                                         Set as Active (visible to users)
                                     </label>
                                 </div>

@@ -33,8 +33,12 @@ export const AuthProvider = ({ children }) => {
         setUser(userData);
     };
 
-    const register = async (name, email, password) => {
-        const response = await api.post('/auth/register', { name, email, password });
+    const register = async (name, email, password, role, mentorId) => {
+        const payload = { name, email, password, role };
+        if (role === 'STUDENT' && mentorId) {
+            payload.mentorId = mentorId;
+        }
+        const response = await api.post('/auth/register', payload);
         const data = response.data;
 
         localStorage.setItem('token', data.token);
@@ -61,6 +65,8 @@ export const AuthProvider = ({ children }) => {
         logout,
         isAuthenticated: !!user,
         isAdmin: user?.role === 'ADMIN',
+        isMentor: user?.role === 'MENTOR',
+        isStudent: user?.role === 'STUDENT',
         loading
     };
 

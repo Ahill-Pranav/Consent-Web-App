@@ -3,15 +3,19 @@ package com.consentapp.service;
 import com.consentapp.dto.TemplateRequest;
 import com.consentapp.dto.TemplateResponse;
 import com.consentapp.entity.ConsentTemplate;
+import com.consentapp.entity.Role;
 import com.consentapp.entity.User;
 import com.consentapp.exception.ResourceNotFoundException;
+import com.consentapp.exception.ValidationException;
 import com.consentapp.repository.ConsentTemplateRepository;
 import com.consentapp.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,12 +30,18 @@ public class TemplateService {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
+        Set<User> assignedStudents = new HashSet<>();
+        if (request.getAssignedStudentIds() != null) {
+            assignedStudents.addAll(userRepository.findAllById(request.getAssignedStudentIds()));
+        }
+
         ConsentTemplate template = ConsentTemplate.builder()
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .content(request.getContent())
                 .createdBy(user)
-                .isActive(request.getIsActive() != null ? request.getIsActive() : true)
+                .isActive(request.getActive() != null ? request.getActive() : true)
+                .assignedStudents(assignedStudents)
                 .build();
 
         templateRepository.save(template);
@@ -40,18 +50,32 @@ public class TemplateService {
 
     @Transactional
     public TemplateResponse updateTemplate(Long id, TemplateRequest request) {
-        ConsentTemplate template = templateRepository.findById(id)
+        ConsentTemplate oldTemplate = templateRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Template not found with id: " + id));
 
-        template.setTitle(request.getTitle());
-        template.setDescription(request.getDescription());
-        template.setContent(request.getContent());
-        if (request.getIsActive() != null) {
-            template.setIsActive(request.getIsActive());
+        oldTemplate.setIsActive(false);
+        templateRepository.save(oldTemplate);
+
+        Set<User> assignedStudents = new HashSet<>();
+        if (request.getAssignedStudentIds() != null) {
+            assignedStudents.addAll(userRepository.findAllById(request.getAssignedStudentIds()));
+        } else {
+            assignedStudents.addAll(oldTemplate.getAssignedStudents());
         }
 
-        templateRepository.save(template);
-        return mapToResponse(template);
+        ConsentTemplate newTemplate = ConsentTemplate.builder()
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .content(request.getContent())
+                .createdBy(oldTemplate.getCreatedBy())
+                .isActive(request.getActive() != null ? request.getActive() : true)
+                .parentTemplate(oldTemplate.getParentTemplate() == null ? oldTemplate : oldTemplate.getParentTemplate())
+                .version(oldTemplate.getVersion() + 1)
+                .assignedStudents(assignedStudents)
+                .build();
+
+        templateRepository.save(newTemplate);
+        return mapToResponse(newTemplate);
     }
 
     @Transactional(readOnly = true)
@@ -62,8 +86,20 @@ public class TemplateService {
     }
 
     @Transactional(readOnly = true)
-    public List<TemplateResponse> getActiveTemplates() {
-        return templateRepository.findByIsActiveTrue().stream()
+    public List<TemplateResponse> getActiveTemplates(String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        List<ConsentTemplate> templates = templateRepository.findByIsActiveTrue();
+
+        if (user.getRole() == Role.STUDENT) {
+            // Filter templates assigned to this student
+            templates = templates.stream()
+                    .filter(t -> t.getAssignedStudents().contains(user))
+                    .collect(Collectors.toList());
+        }
+
+        return templates.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -85,15 +121,19 @@ public class TemplateService {
     }
 
     private TemplateResponse mapToResponse(ConsentTemplate template) {
-        return TemplateResponse.builder()
-                .id(template.getId())
-                .title(template.getTitle())
-                .description(template.getDescription())
-                .content(template.getContent())
-                .isActive(template.getIsActive())
-                .createdBy(template.getCreatedBy().getEmail())
-                .createdAt(template.getCreatedAt())
-                .updatedAt(template.getUpdatedAt())
-                .build();
+        TemplateResponse response = new TemplateResponse();
+        response.setId(template.getId());
+        response.setTitle(template.getTitle());
+        response.setDescription(template.getDescription());
+        response.setContent(template.getContent());
+        response.setActive(template.getIsActive());
+        response.setCreatedBy(template.getCreatedBy().getEmail());
+        response.setCreatedAt(template.getCreatedAt());
+        response.setUpdatedAt(template.getUpdatedAt());
+        response.setVersion(template.getVersion());
+        response.setAssignedStudentIds(template.getAssignedStudents().stream()
+                .map(User::getId)
+                .collect(Collectors.toList()));
+        return response;
     }
 }

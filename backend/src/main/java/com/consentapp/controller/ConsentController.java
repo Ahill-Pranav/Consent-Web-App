@@ -21,7 +21,7 @@ public class ConsentController {
     private final ConsentService consentService;
 
     @PostMapping("/{templateId}/sign")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('MENTOR', 'STUDENT')")
     public ResponseEntity<ConsentResponse> signConsent(
             @PathVariable Long templateId,
             HttpServletRequest request,
