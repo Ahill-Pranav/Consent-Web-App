@@ -13,6 +13,9 @@ import com.consentapp.repository.UserRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +29,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ConsentService {
 
     private final ConsentRecordRepository consentRecordRepository;
@@ -61,6 +65,7 @@ public class ConsentService {
                 .build();
 
         consentRecordRepository.save(record);
+        log.info("Student {} signed template v{}", user.getEmail(), template.getVersion());
         return mapToResponse(record);
     }
 
@@ -75,10 +80,10 @@ public class ConsentService {
     }
 
     @Transactional(readOnly = true)
-    public List<ConsentResponse> getAllConsents() {
-        return consentRecordRepository.findAll().stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+    @SuppressWarnings("null")
+    public Page<ConsentResponse> getAllConsents(Pageable pageable) {
+        return consentRecordRepository.findAll(pageable)
+                .map(this::mapToResponse);
     }
 
     private String generateSignatureHash(User user, ConsentTemplate template, String auditLog) {

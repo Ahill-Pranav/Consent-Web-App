@@ -9,16 +9,19 @@ import com.consentapp.exception.ResourceNotFoundException;
 import com.consentapp.repository.ConsentTemplateRepository;
 import com.consentapp.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TemplateService {
 
     private final ConsentTemplateRepository templateRepository;
@@ -45,6 +48,7 @@ public class TemplateService {
                 .build();
 
         templateRepository.save(template);
+        log.info("Created new template v1.0: {}", template.getTitle());
         return mapToResponse(template);
     }
 
@@ -76,33 +80,52 @@ public class TemplateService {
                 .build();
 
         templateRepository.save(newTemplate);
+        log.info("Modified template: v{} -> v{}", oldTemplate.getVersion(), newTemplate.getVersion());
         return mapToResponse(newTemplate);
     }
 
     @Transactional(readOnly = true)
-    public List<TemplateResponse> getAllTemplates() {
-        return templateRepository.findAll().stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+    @SuppressWarnings("null")
+    public Page<TemplateResponse> getAllTemplates(Pageable pageable, String search) {
+        if (search != null && !search.isEmpty()) {
+            return templateRepository.findByTitleContainingIgnoreCase(search, pageable)
+                    .map(this::mapToResponse);
+        }
+        return templateRepository.findAll(pageable).map(this::mapToResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<TemplateResponse> getActiveTemplates(String userEmail) {
+    @SuppressWarnings("null")
+    public Page<TemplateResponse> getActiveTemplates(String userEmail, Pageable pageable, String search) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        List<ConsentTemplate> templates = templateRepository.findByIsActiveTrue();
-
         if (user.getRole() == Role.STUDENT) {
-            // Filter templates assigned to this student
-            templates = templates.stream()
-                    .filter(t -> t.getAssignedStudents().contains(user))
-                    .collect(Collectors.toList());
+            final Long studentId = user.getId();
+            if (search != null && !search.isEmpty()) {
+                return templateRepository.findByIsActiveTrueAndTitleContainingIgnoreCase(search, pageable)
+                        .map(t -> {
+                            if (t.getAssignedStudents().stream().anyMatch(s -> s.getId().equals(studentId))) {
+                                return mapToResponse(t);
+                            }
+                            return null;
+                        });
+            }
+            return templateRepository.findByIsActiveTrue(pageable)
+                    .map(t -> {
+                        if (t.getAssignedStudents().stream().anyMatch(s -> s.getId().equals(studentId))) {
+                            return mapToResponse(t);
+                        }
+                        return null;
+                    });
         }
 
-        return templates.stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        if (search != null && !search.isEmpty()) {
+            return templateRepository.findByIsActiveTrueAndTitleContainingIgnoreCase(search, pageable)
+                    .map(this::mapToResponse);
+        }
+        return templateRepository.findByIsActiveTrue(pageable)
+                .map(this::mapToResponse);
     }
 
     @Transactional(readOnly = true)

@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: backend
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/consentdb}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:9284}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+jwt:
+  secret: ${JWT_SECRET:Y29uc2VudEFwcFNlY3JldEtleUZvckpXVFRva2VuR2VuZXJhdGlvbg==}
+  expiration: 86400000
+
+server:
+  port: ${PORT:8080}
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html

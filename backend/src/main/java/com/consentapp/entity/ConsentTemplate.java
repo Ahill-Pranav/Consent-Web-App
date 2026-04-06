@@ -15,10 +15,12 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class ConsentTemplate {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @Column(nullable = false)
@@ -32,6 +34,7 @@ public class ConsentTemplate {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
+    @ToString.Exclude
     private User createdBy;
 
     @Column(name = "is_active", nullable = false)
@@ -43,6 +46,7 @@ public class ConsentTemplate {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_template_id")
+    @ToString.Exclude
     private ConsentTemplate parentTemplate;
 
     @ManyToMany(fetch = FetchType.LAZY)

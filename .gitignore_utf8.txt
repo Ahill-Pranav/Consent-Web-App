@@ -1,0 +1,7 @@
+﻿*.log
+backend/target/
+backend/*.log
+backend/target/
+*.log
+backend/target/
+backend/*.log

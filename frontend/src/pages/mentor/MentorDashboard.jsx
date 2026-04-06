@@ -1,12 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/axiosConfig';
 import { useAuth } from '../../context/AuthContext';
+import toast from 'react-hot-toast';
+import { Search, ChevronLeft, ChevronRight, Plus, Info, Check, X } from 'lucide-react';
 
 const MentorDashboard = () => {
     const { user, logout } = useAuth();
     const [templates, setTemplates] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    
+    // Pagination & Search State
+    const [search, setSearch] = useState('');
+    const [page, setPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
     
     const [editingId, setEditingId] = useState(null);
     const [title, setTitle] = useState('');
@@ -17,15 +24,25 @@ const MentorDashboard = () => {
 
     useEffect(() => {
         fetchTemplates();
+    }, [page, search]);
+
+    useEffect(() => {
         fetchMyStudents();
     }, []);
 
     const fetchTemplates = async () => {
         try {
-            const res = await api.get('/templates');
-            setTemplates(Array.isArray(res.data) ? res.data : []);
+            setLoading(true);
+            const res = await api.get(`/templates?page=${page}&size=6&search=${search}`);
+            // Backend returns a Page object now
+            if (res.data.content) {
+                setTemplates(res.data.content);
+                setTotalPages(res.data.totalPages);
+            } else {
+                setTemplates(Array.isArray(res.data) ? res.data : []);
+            }
         } catch (err) {
-            console.error("Failed to fetch templates");
+            toast.error("Failed to fetch templates");
         } finally {
             setLoading(false);
         }
@@ -59,18 +76,20 @@ const MentorDashboard = () => {
 
     const handleSave = async (e) => {
         e.preventDefault();
+        const loadToast = toast.loading(editingId ? "Publishing new version..." : "Creating template...");
         try {
             const payload = { title, description, content, isActive: true, assignedStudentIds };
             if (editingId) {
-                // Editing creates a new version
                 await api.put(`/templates/${editingId}`, payload);
+                toast.success("New version published successfully", { id: loadToast });
             } else {
                 await api.post('/templates', payload);
+                toast.success("Template created successfully", { id: loadToast });
             }
             setShowModal(false);
             fetchTemplates();
         } catch (err) {
-            alert('Failed to save template. Check console.');
+            toast.error(err.response?.data?.message || "Failed to save template", { id: loadToast });
         }
     };
 
@@ -85,7 +104,7 @@ const MentorDashboard = () => {
             <main className="max-w-7xl mx-auto px-6 mt-12">
                 {/* Hero Section */}
                 <div className="relative overflow-hidden bg-forest rounded-[32px] p-10 md:p-14 mb-12 shadow-xl reveal flex flex-col md:flex-row justify-between items-center border border-forest-mid">
-                    <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-bl from-amber-light/20 to-transparent rounded-full translate-x-1/3 -translate-y-1/3 blur-[80px]"></div>
+                    <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-linear-to-bl from-amber-light/20 to-transparent rounded-full translate-x-1/3 -translate-y-1/3 blur-[80px]"></div>
                     
                     <div className="relative z-10 w-full">
                         <h1 className="text-4xl md:text-5xl font-serif text-white mb-2">Manage Forms</h1>
@@ -93,28 +112,41 @@ const MentorDashboard = () => {
                         
                         <button 
                             onClick={() => handleOpenModal()} 
-                            className="btn-accent inline-flex w-auto px-8"
+                            className="btn-accent inline-flex w-auto px-8 gap-2"
                         >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+                            <Plus className="w-5 h-5" />
                             Create New Template
                         </button>
                     </div>
 
                     <div className="relative z-10 mt-8 md:mt-0 glass-dark p-6 rounded-2xl w-full md:w-auto text-center shrink-0 border border-white/10">
                         <div className="text-5xl font-serif text-amber-light leading-none">{templates.filter(t => t.isActive).length}</div>
-                        <div className="text-sage text-sm font-medium uppercase tracking-wider mt-2">Active Forms</div>
+                        <div className="text-sage text-sm font-medium uppercase tracking-wider mt-2">Visible Here</div>
                     </div>
                 </div>
 
-                {/* Templates Grid */}
-                <div className="mb-6 flex justify-between items-end reveal" style={{ transitionDelay: '0.1s' }}>
-                    <h2 className="text-2xl font-bold text-forest-dark">Your Templates</h2>
-                    <span className="text-sm text-text-muted">Viewing all generated forms</span>
+                {/* Search & Filter Bar */}
+                <div className="mb-8 flex flex-col md:flex-row gap-4 items-center justify-between reveal" style={{ transitionDelay: '0.1s' }}>
+                    <div className="relative w-full md:w-96">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
+                        <input 
+                            type="text" 
+                            placeholder="Search templates..." 
+                            className="form-input pl-12 bg-white"
+                            value={search}
+                            onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+                        />
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <h2 className="text-xl font-bold text-forest-dark hidden md:block">Your Templates</h2>
+                        <span className="text-xs text-text-muted hidden md:block bg-forest/5 px-3 py-1 rounded-full">Showing {templates.length} results</span>
+                    </div>
                 </div>
 
                 {loading ? (
                     <div className="flex justify-center p-20"><div className="w-10 h-10 border-4 border-amber border-t-transparent rounded-full animate-spin"></div></div>
                 ) : (
+                    <>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 reveal" style={{ transitionDelay: '0.2s' }}>
                         {templates.map(template => (
                             <div key={template.id} className={`bg-white p-6 rounded-2xl border ${template.isActive ? 'border-forest/10 shadow-md' : 'border-gray-200 opacity-60 bg-gray-50'} transition-all duration-300 flex flex-col`}>
@@ -130,7 +162,7 @@ const MentorDashboard = () => {
                                     </span>
                                 </div>
                                 <h3 className="text-lg font-bold text-forest-dark mb-2">{template.title}</h3>
-                                <p className="text-sm text-text-muted line-clamp-2 mb-6 flex-grow">{template.description}</p>
+                                <p className="text-sm text-text-muted line-clamp-2 mb-6 grow">{template.description}</p>
                                 
                                 {template.isActive && (
                                     <div className="mt-auto pt-4 border-t border-forest/5 text-right">
@@ -146,24 +178,56 @@ const MentorDashboard = () => {
                             </div>
                         ))}
                     </div>
+
+                    {/* Pagination Controls */}
+                    {!loading && totalPages > 1 && (
+                        <div className="mt-12 flex justify-center items-center gap-4 reveal">
+                            <button 
+                                disabled={page === 0}
+                                onClick={() => setPage(p => p - 1)}
+                                className="p-2 rounded-xl border border-forest/10 hover:bg-forest/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                            >
+                                <ChevronLeft className="w-6 h-6 text-forest" />
+                            </button>
+                            <div className="flex gap-2">
+                                {[...Array(totalPages)].map((_, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => setPage(i)}
+                                        className={`w-10 h-10 rounded-xl font-bold text-sm transition-all ${page === i ? 'bg-forest text-white shadow-lg' : 'bg-white border border-forest/5 text-forest hover:bg-forest/5'}`}
+                                    >
+                                        {i + 1}
+                                    </button>
+                                ))}
+                            </div>
+                            <button 
+                                disabled={page === totalPages - 1}
+                                onClick={() => setPage(p => p + 1)}
+                                className="p-2 rounded-xl border border-forest/10 hover:bg-forest/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                            >
+                                <ChevronRight className="w-6 h-6 text-forest" />
+                            </button>
+                        </div>
+                    )}
+                    </>
                 )}
             </main>
 
             {/* Form Modal */}
             {showModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-forest-dark/40 backdrop-blur-sm" onClick={() => setShowModal(false)}></div>
                     <div className="glass bg-white/95 w-full max-w-2xl rounded-3xl p-8 relative z-10 animate-reveal-up shadow-2xl border border-white translate-y-0">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-2xl font-serif text-forest-dark">{editingId ? 'Edit Draft / New Version' : 'Create Template'}</h3>
                             <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-red-500 transition-colors">
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                <X className="w-6 h-6" />
                             </button>
                         </div>
 
                         {editingId && (
                             <div className="mb-6 p-4 bg-amber/10 border border-amber/20 rounded-xl text-sm text-forest-dark flex items-start gap-3">
-                                <span className="text-amber">ℹ️</span>
+                                <Info className="w-5 h-5 text-amber shrink-0" />
                                 <p>Saving edits will automatically publish a <strong>new version</strong> of this form, archiving the previous version to protect existing signatures.</p>
                             </div>
                         )}
@@ -192,7 +256,7 @@ const MentorDashboard = () => {
                                             className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${assignedStudentIds.includes(student.id) ? 'bg-forest/10 border-forest text-forest shadow-sm' : 'bg-white border-gray-100 text-text-muted hover:border-forest/20'}`}
                                         >
                                             <div className={`w-5 h-5 rounded flex items-center justify-center border ${assignedStudentIds.includes(student.id) ? 'bg-forest border-forest text-white' : 'border-gray-300'}`}>
-                                                {assignedStudentIds.includes(student.id) && <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>}
+                                                {assignedStudentIds.includes(student.id) && <Check className="w-4 h-4 text-white" />}
                                             </div>
                                             <div className="flex flex-col">
                                                 <span className="text-sm font-bold leading-none">{student.name}</span>

@@ -9,9 +9,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/templates")
@@ -47,18 +48,17 @@ public class TemplateController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MENTOR', 'STUDENT')")
-    public ResponseEntity<List<TemplateResponse>> getAllTemplates(Authentication authentication) {
-        // If the user has only USER role, they should only see active templates based
-        // on requirements
-        // The prompt says "View Templates ADMIN: ✅ USER: ✅".
-        // We will make an explicit separation:
+    public ResponseEntity<Page<TemplateResponse>> getAllTemplates(
+            Authentication authentication,
+            Pageable pageable,
+            @RequestParam(required = false) String search) {
         boolean isAdmin = authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
 
         if (isAdmin) {
-            return ResponseEntity.ok(templateService.getAllTemplates());
+            return ResponseEntity.ok(templateService.getAllTemplates(pageable, search));
         } else {
-            return ResponseEntity.ok(templateService.getActiveTemplates(authentication.getName()));
+            return ResponseEntity.ok(templateService.getActiveTemplates(authentication.getName(), pageable, search));
         }
     }
 

@@ -1,9 +1,15 @@
-import React, { useState, useEffect } from 'react';
 import api from '../../api/axiosConfig';
+import toast from 'react-hot-toast';
+import { Search, ChevronLeft, ChevronRight, X, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 const TemplateManager = ({ setTemplateCount }) => {
     const [templates, setTemplates] = useState([]);
     const [loading, setLoading] = useState(true);
+    
+    // Pagination & Search
+    const [search, setSearch] = useState('');
+    const [page, setPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
 
     // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -13,11 +19,16 @@ const TemplateManager = ({ setTemplateCount }) => {
     const fetchTemplates = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/templates');
-            setTemplates(response.data);
-            if (setTemplateCount) setTemplateCount(response.data.length);
+            const res = await api.get(`/templates?page=${page}&size=10&search=${search}`);
+            if (res.data.content) {
+                setTemplates(res.data.content);
+                setTotalPages(res.data.totalPages);
+                if (setTemplateCount) setTemplateCount(res.data.totalElements);
+            } else {
+                setTemplates(Array.isArray(res.data) ? res.data : []);
+            }
         } catch (error) {
-            console.error("Failed to fetch templates", error);
+            toast.error("Failed to fetch templates");
         } finally {
             setLoading(false);
         }
@@ -25,7 +36,7 @@ const TemplateManager = ({ setTemplateCount }) => {
 
     useEffect(() => {
         fetchTemplates();
-    }, [setTemplateCount]);
+    }, [page, search, setTemplateCount]);
 
     const openModal = (template = null) => {
         if (template) {
@@ -50,27 +61,31 @@ const TemplateManager = ({ setTemplateCount }) => {
 
     const handleSave = async (e) => {
         e.preventDefault();
+        const loadToast = toast.loading(currentTemplate ? "Updating template..." : "Creating template...");
         try {
             if (currentTemplate) {
                 await api.put(`/templates/${currentTemplate.id}`, formData);
+                toast.success("Template updated successfully", { id: loadToast });
             } else {
                 await api.post('/templates', formData);
+                toast.success("Template created successfully", { id: loadToast });
             }
             fetchTemplates();
             closeModal();
         } catch (error) {
-            console.error("Failed to save template", error);
-            alert("Error saving template. Check console.");
+            toast.error(error.response?.data?.message || "Failed to save template", { id: loadToast });
         }
     };
 
     const handleDelete = async (id) => {
         if (window.confirm("Are you sure you want to delete (deactivate) this template?")) {
+            const loadToast = toast.loading("Deactivating template...");
             try {
                 await api.delete(`/templates/${id}`);
+                toast.success("Template deactivated", { id: loadToast });
                 fetchTemplates();
             } catch (error) {
-                console.error("Failed to delete", error);
+                toast.error("Failed to deactivate template", { id: loadToast });
             }
         }
     };
@@ -79,10 +94,20 @@ const TemplateManager = ({ setTemplateCount }) => {
 
     return (
         <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1.5rem', color: 'var(--forest-dark)' }}>Consent Templates</h2>
-                <div className="text-xs text-text-muted italic bg-amber/5 px-4 py-2 rounded-lg border border-amber/10">
-                    Administrators can only manage and delete existing mentor forms.
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 bg-white p-6 rounded-2xl border border-forest/10 shadow-sm">
+                <div>
+                     <h2 className="text-2xl font-serif text-forest-dark">Consent Templates</h2>
+                     <p className="text-xs text-text-muted mt-1 italic">Administrators manage master versions of all platform forms.</p>
+                </div>
+                <div className="relative w-full md:w-72">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                    <input 
+                        type="search" 
+                        placeholder="Search templates..." 
+                        className="form-input pl-10 text-sm py-2 bg-cream/30"
+                        value={search}
+                        onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+                    />
                 </div>
             </div>
 
@@ -146,6 +171,37 @@ const TemplateManager = ({ setTemplateCount }) => {
                     </tbody>
                 </table>
             </div>
+
+            {/* Pagination */}
+            {!loading && totalPages > 1 && (
+                <div className="mt-8 flex justify-center items-center gap-3">
+                    <button 
+                        disabled={page === 0}
+                        onClick={() => setPage(p => p - 1)}
+                        className="p-2 rounded-lg border border-forest/10 hover:bg-forest/5 disabled:opacity-20 transition-all"
+                    >
+                        <ChevronLeft className="w-5 h-5 text-forest" />
+                    </button>
+                    <div className="flex gap-1">
+                        {[...Array(totalPages)].map((_, i) => (
+                            <button
+                                key={i}
+                                onClick={() => setPage(i)}
+                                className={`w-9 h-9 rounded-lg font-bold text-xs transition-all ${page === i ? 'bg-forest text-white' : 'bg-white border border-forest/5 text-forest hover:bg-forest/5'}`}
+                            >
+                                {i + 1}
+                            </button>
+                        ))}
+                    </div>
+                    <button 
+                        disabled={page === totalPages - 1}
+                        onClick={() => setPage(p => p + 1)}
+                        className="p-2 rounded-lg border border-forest/10 hover:bg-forest/5 disabled:opacity-20 transition-all"
+                    >
+                        <ChevronRight className="w-5 h-5 text-forest" />
+                    </button>
+                </div>
+            )}
 
             {/* Modal */}
             {isModalOpen && (
