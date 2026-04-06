@@ -1,10 +1,11 @@
 spring:
   application:
     name: backend
+
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/consentdb?options=-c%20timezone=UTC}
-    username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:9284}
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/consentdb}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:9284}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -13,18 +14,13 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.PostgreSQLDialect
 
 jwt:
-  # Using a base64 encoded string for HS256 (at least 256 bits/32 bytes)
-  secret: Y29uc2VudEFwcFNlY3JldEtleUZvckpXVFRva2VuR2VuZXJhdGlvbg==
-  expiration: 86400000 # 24 hours in milliseconds
+  secret: ${JWT_SECRET:Y29uc2VudEFwcFNlY3JldEtleUZvckpXVFRva2VuR2VuZXJhdGlvbg==}
+  expiration: 86400000
 
 server:
-  port: 8080
-  error:
-    include-message: always
-    include-binding-errors: always
+  port: ${PORT:8080}
 
 springdoc:
   api-docs:
