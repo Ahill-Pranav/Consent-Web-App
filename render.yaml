@@ -1,27 +1,26 @@
 services:
   - type: web
-    name: backend
-    env: java
-    buildCommand: ./mvnw clean package -DskipTests
-    startCommand: java -jar target/backend-0.0.1-SNAPSHOT.jar
-    envVars:
-      - key: JAVA_VERSION
-        value: 21
-      - key: DB_URL
-        fromDatabase:
-          name: consent-db
-          property: connectionString
-      - key: DB_USERNAME
-        fromDatabase:
-          name: consent-db
-          property: user
-      - key: DB_PASSWORD
-        fromDatabase:
-          name: consent-db
-          property: password
-      - key: JWT_SECRET
-        generateValue: true
-
-databases:
-  - name: consent-db
-    plan: free
+      name: backend
+          env: docker
+              rootDir: backend
+                  plan: free
+                      envVars:
+                            - key: DB_URL
+                                    fromDatabase:
+                                              name: consent-db
+                                                        property: connectionString
+                                                              - key: DB_USERNAME
+                                                                      fromDatabase:
+                                                                                name: consent-db
+                                                                                          property: user
+                                                                                                - key: DB_PASSWORD
+                                                                                                        fromDatabase:
+                                                                                                                  name: consent-db
+                                                                                                                            property: password
+                                                                                                                                  - key: JWT_SECRET
+                                                                                                                                          generateValue: true
+                                                                                                                                          
+                                                                                                                                          databases:
+                                                                                                                                            - name: consent-db
+                                                                                                                                                plan: free
+                                                                                                                                                
