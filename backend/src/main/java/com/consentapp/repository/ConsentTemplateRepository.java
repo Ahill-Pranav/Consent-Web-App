@@ -15,4 +15,10 @@ public interface ConsentTemplateRepository extends JpaRepository<ConsentTemplate
     Page<ConsentTemplate> findByTitleContainingIgnoreCase(String title, Pageable pageable);
     Page<ConsentTemplate> findByIsActiveTrueAndTitleContainingIgnoreCase(String title, Pageable pageable);
     List<ConsentTemplate> findByTitleOrderByVersionDesc(String title);
+
+    @org.springframework.data.jpa.repository.Query("SELECT t FROM ConsentTemplate t JOIN t.assignedStudents s WHERE t.isActive = true AND s.id = :studentId")
+    Page<ConsentTemplate> findAssignedTemplates(Long studentId, Pageable pageable);
+
+    @org.springframework.data.jpa.repository.Query("SELECT t FROM ConsentTemplate t JOIN t.assignedStudents s WHERE t.isActive = true AND s.id = :studentId AND LOWER(t.title) LIKE LOWER(CONCAT('%', :search, '%'))")
+    Page<ConsentTemplate> findAssignedTemplatesWithSearch(Long studentId, String search, Pageable pageable);
 }

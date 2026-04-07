@@ -112,21 +112,11 @@ public class TemplateService {
         if (user.getRole() == Role.STUDENT) {
             final Long studentId = user.getId();
             if (search != null && !search.isEmpty()) {
-                return templateRepository.findByIsActiveTrueAndTitleContainingIgnoreCase(search, pageable)
-                        .map(t -> {
-                            if (t.getAssignedStudents().stream().anyMatch(s -> s.getId().equals(studentId))) {
-                                return mapToResponse(t);
-                            }
-                            return null;
-                        });
+                return templateRepository.findAssignedTemplatesWithSearch(studentId, search, pageable)
+                        .map(this::mapToResponse);
             }
-            return templateRepository.findByIsActiveTrue(pageable)
-                    .map(t -> {
-                        if (t.getAssignedStudents().stream().anyMatch(s -> s.getId().equals(studentId))) {
-                            return mapToResponse(t);
-                        }
-                        return null;
-                    });
+            return templateRepository.findAssignedTemplates(studentId, pageable)
+                    .map(this::mapToResponse);
         }
 
         if (search != null && !search.isEmpty()) {

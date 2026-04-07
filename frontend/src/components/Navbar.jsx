@@ -6,7 +6,7 @@ const Navbar = () => {
     const { logout, user, isAdmin, isMentor } = useAuth();
 
     return (
-        <nav className="glass sticky top-0 z-100 px-6 md:px-12 py-4 flex justify-between items-center rounded-b-3xl">
+        <nav className="glass sticky top-0 z-[100] px-6 md:px-12 py-4 flex justify-between items-center rounded-b-3xl">
             <div className="flex items-center gap-8">
                 <div className="font-serif text-2xl text-forest-dark font-bold tracking-tighter">
                     Consent<span className="text-amber">Flow</span>
@@ -43,9 +43,10 @@ const Navbar = () => {
 
                 <button 
                     onClick={logout}
-                    className="ml-2 p-2 hover:bg-red-50 rounded-lg text-red-500 transition-colors group"
+                    className="ml-2 p-2 flex items-center gap-2 hover:bg-red-50 rounded-lg text-red-500 transition-colors group border border-transparent hover:border-red-100"
                     title="Sign Out"
                 >
+                    <span className="font-bold text-sm hidden md:inline">Logout</span>
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:translate-x-0.5 transition-transform"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                 </button>
             </div>
