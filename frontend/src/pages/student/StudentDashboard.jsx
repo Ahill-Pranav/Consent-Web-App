@@ -19,9 +19,12 @@ const StudentDashboard = () => {
                 api.get('/templates'),
                 api.get('/consents/my')
             ]);
-            // Backend returns a Page object for templates, so use .content if available
-            setTemplates(tempRes.data.content || tempRes.data || []);
-            setSignedRecords(signedRes.data);
+            
+            const fetchedTemplates = tempRes.data?.content || tempRes.data;
+            setTemplates(Array.isArray(fetchedTemplates) ? fetchedTemplates : []);
+            
+            const fetchedRecords = signedRes.data?.content || signedRes.data;
+            setSignedRecords(Array.isArray(fetchedRecords) ? fetchedRecords : []);
         } catch (err) {
             console.error("Failed to load dashboard data");
         } finally {
