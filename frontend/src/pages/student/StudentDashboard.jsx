@@ -17,9 +17,10 @@ const StudentDashboard = () => {
         try {
             const [tempRes, signedRes] = await Promise.all([
                 api.get('/templates'),
-                api.get('/consents/my-records')
+                api.get('/consents/my')
             ]);
-            setTemplates(tempRes.data);
+            // Backend returns a Page object for templates, so use .content if available
+            setTemplates(tempRes.data.content || tempRes.data || []);
             setSignedRecords(signedRes.data);
         } catch (err) {
             console.error("Failed to load dashboard data");

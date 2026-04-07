@@ -2,11 +2,15 @@ package com.consentapp.service;
 
 import com.consentapp.dto.TemplateRequest;
 import com.consentapp.dto.TemplateResponse;
+import com.consentapp.dto.TemplateStatsResponse;
+import com.consentapp.dto.StudentStatusDto;
 import com.consentapp.entity.ConsentTemplate;
+import com.consentapp.entity.ConsentRecord;
 import com.consentapp.entity.Role;
 import com.consentapp.entity.User;
 import com.consentapp.exception.ResourceNotFoundException;
 import com.consentapp.repository.ConsentTemplateRepository;
+import com.consentapp.repository.ConsentRecordRepository;
 import com.consentapp.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +20,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.ArrayList;
+import java.util.Optional;
+import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,6 +34,7 @@ public class TemplateService {
 
     private final ConsentTemplateRepository templateRepository;
     private final UserRepository userRepository;
+    private final ConsentRecordRepository consentRecordRepository;
 
     @Transactional
     @SuppressWarnings("null")
@@ -144,6 +153,71 @@ public class TemplateService {
         // Soft delete
         template.setIsActive(false);
         templateRepository.save(template);
+    }
+
+    @Transactional
+    @SuppressWarnings("null")
+    public TemplateResponse toggleTemplateStatus(Long id, boolean active) {
+        ConsentTemplate template = templateRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Template not found with id: " + id));
+        template.setIsActive(active);
+        templateRepository.save(template);
+        log.info("Template status toggled to {}: {}", active, template.getTitle());
+        return mapToResponse(template);
+    }
+
+    @Transactional(readOnly = true)
+    @SuppressWarnings("null")
+    public List<TemplateResponse> getTemplateHistory(Long id) {
+        ConsentTemplate template = templateRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Template not found with id: " + id));
+        return templateRepository.findByTitleOrderByVersionDesc(template.getTitle())
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    @SuppressWarnings("null")
+    public TemplateStatsResponse getTemplateStats(Long id) {
+        ConsentTemplate template = templateRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Template not found with id: " + id));
+
+        List<ConsentRecord> consents = consentRecordRepository.findByTemplateId(id);
+
+        List<StudentStatusDto> students = new ArrayList<>();
+        int signedCount = 0;
+        int pendingCount = 0;
+
+        for (User student : template.getAssignedStudents()) {
+            Optional<ConsentRecord> consentOpt = consents.stream()
+                    .filter(c -> c.getUser().getId().equals(student.getId()))
+                    .findFirst();
+
+            boolean hasSigned = consentOpt.isPresent();
+            LocalDateTime signedAt = hasSigned ? consentOpt.get().getSignedAt() : null;
+
+            students.add(new StudentStatusDto(
+                    student.getId(),
+                    student.getName(),
+                    student.getEmail(),
+                    hasSigned,
+                    signedAt
+            ));
+
+            if (hasSigned) {
+                signedCount++;
+            } else {
+                pendingCount++;
+            }
+        }
+
+        return new TemplateStatsResponse(
+                template.getAssignedStudents().size(),
+                signedCount,
+                pendingCount,
+                students
+        );
     }
 
     private TemplateResponse mapToResponse(ConsentTemplate template) {

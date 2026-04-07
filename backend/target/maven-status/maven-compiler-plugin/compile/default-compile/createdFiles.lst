@@ -3,7 +3,9 @@ com\consentapp\entity\ConsentTemplate$ConsentTemplateBuilder.class
 com\consentapp\exception\ValidationException.class
 com\consentapp\dto\AuthRequest.class
 com\consentapp\service\ConsentService.class
+com\consentapp\config\OpenApiConfig.class
 com\consentapp\repository\ConsentTemplateRepository.class
+com\consentapp\dto\TemplateStatsResponse.class
 com\consentapp\entity\User$UserBuilder.class
 com\consentapp\entity\ConsentRecord.class
 com\consentapp\security\SecurityConfig.class

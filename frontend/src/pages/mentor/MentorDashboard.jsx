@@ -2,13 +2,22 @@ import React, { useState, useEffect } from 'react';
 import api from '../../api/axiosConfig';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
-import { Search, ChevronLeft, ChevronRight, Plus, Info, Check, X } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, Plus, Info, Check, X, Clock, Power, Edit3, History } from 'lucide-react';
 
 const MentorDashboard = () => {
     const { user, logout } = useAuth();
     const [templates, setTemplates] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [showHistoryModal, setShowHistoryModal] = useState(false);
+    const [historyData, setHistoryData] = useState([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
+    
+    // Stats Modal State
+    const [statsModalOpen, setStatsModalOpen] = useState(false);
+    const [statsTemplate, setStatsTemplate] = useState(null);
+    const [statsData, setStatsData] = useState(null);
+    const [statsLoading, setStatsLoading] = useState(false);
     
     // Pagination & Search State
     const [search, setSearch] = useState('');
@@ -99,6 +108,46 @@ const MentorDashboard = () => {
         );
     };
 
+    const handleToggleStatus = async (id, currentStatus) => {
+        try {
+            await api.patch(`/templates/${id}/status?active=${!currentStatus}`);
+            toast.success(currentStatus ? "Template archived" : "Template activated");
+            fetchTemplates();
+        } catch (err) {
+            toast.error("Failed to toggle status");
+        }
+    };
+
+    const handleOpenHistory = async (templateId) => {
+        setHistoryLoading(true);
+        setShowHistoryModal(true);
+        setHistoryData([]);
+        try {
+            const res = await api.get(`/templates/${templateId}/history`);
+            setHistoryData(res.data);
+        } catch (err) {
+            toast.error("Failed to fetch history");
+            setShowHistoryModal(false);
+        } finally {
+            setHistoryLoading(false);
+        }
+    };
+
+    const handleOpenStats = async (template) => {
+        setStatsTemplate(template);
+        setStatsData(null);
+        setStatsLoading(true);
+        setStatsModalOpen(true);
+        try {
+            const res = await api.get(`/templates/${template.id}/stats`);
+            setStatsData(res.data);
+        } catch (error) {
+            toast.error("Failed to load template statistics.");
+        } finally {
+            setStatsLoading(false);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-cream text-charcoal pb-20">
             <main className="max-w-7xl mx-auto px-6 mt-12">
@@ -120,7 +169,7 @@ const MentorDashboard = () => {
                     </div>
 
                     <div className="relative z-10 mt-8 md:mt-0 glass-dark p-6 rounded-2xl w-full md:w-auto text-center shrink-0 border border-white/10">
-                        <div className="text-5xl font-serif text-amber-light leading-none">{templates.filter(t => t.isActive).length}</div>
+                        <div className="text-5xl font-serif text-amber-light leading-none">{templates.filter(t => t.active).length}</div>
                         <div className="text-sage text-sm font-medium uppercase tracking-wider mt-2">Visible Here</div>
                     </div>
                 </div>
@@ -149,32 +198,52 @@ const MentorDashboard = () => {
                     <>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 reveal" style={{ transitionDelay: '0.2s' }}>
                         {templates.map(template => (
-                            <div key={template.id} className={`bg-white p-6 rounded-2xl border ${template.isActive ? 'border-forest/10 shadow-md' : 'border-gray-200 opacity-60 bg-gray-50'} transition-all duration-300 flex flex-col`}>
+                            <div key={template.id} className={`bg-white p-6 rounded-2xl border ${template.active ? 'border-forest/10 shadow-md' : 'border-gray-200 opacity-60 bg-gray-50'} transition-all duration-300 flex flex-col`}>
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="flex items-center gap-3">
-                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-serif text-xl ${template.isActive ? 'bg-amber/10 text-amber' : 'bg-gray-200 text-gray-500'}`}>
+                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-serif text-xl ${template.active ? 'bg-amber/10 text-amber' : 'bg-gray-200 text-gray-500'}`}>
                                             {template.title.charAt(0)}
                                         </div>
                                         <span className="text-sm font-bold text-forest uppercase tracking-wider">v{template.version || 1}.0</span>
                                     </div>
-                                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${template.isActive ? 'bg-sage/10 text-forest border-sage/20' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
-                                        {template.isActive ? 'Active' : 'Archived'}
+                                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${template.active ? 'bg-sage/10 text-forest border-sage/20' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
+                                        {template.active ? 'Active' : 'Archived'}
                                     </span>
                                 </div>
                                 <h3 className="text-lg font-bold text-forest-dark mb-2">{template.title}</h3>
                                 <p className="text-sm text-text-muted line-clamp-2 mb-6 grow">{template.description}</p>
                                 
-                                {template.isActive && (
-                                    <div className="mt-auto pt-4 border-t border-forest/5 text-right">
-                                        <button 
-                                            onClick={() => handleOpenModal(template)}
-                                            className="text-xs font-bold text-amber hover:text-forest transition-colors uppercase tracking-wider flex items-center justify-end gap-1 w-full"
-                                        >
-                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                                            Create New Version
-                                        </button>
-                                    </div>
-                                )}
+                                {/* Action Buttons */}
+                                <div className="mt-auto pt-4 border-t border-forest/5 flex flex-wrap gap-2 justify-end">
+                                    <button 
+                                        onClick={() => handleToggleStatus(template.id, template.active)}
+                                        className="btn-accent bg-none! bg-white! text-forest! border border-forest/20 shadow-none hover:shadow-none hover:bg-forest/5 px-3 py-1.5 text-xs gap-1"
+                                    >
+                                        <Power className="w-3.5 h-3.5" />
+                                        {template.active ? 'Deactivate' : 'Activate'}
+                                    </button>
+                                    <button 
+                                        onClick={() => handleOpenHistory(template.id)}
+                                        className="btn-accent bg-none! bg-white! text-forest! border border-forest/20 shadow-none hover:shadow-none hover:bg-forest/5 px-3 py-1.5 text-xs gap-1"
+                                    >
+                                        <History className="w-3.5 h-3.5" />
+                                        History
+                                    </button>
+                                    <button 
+                                        onClick={() => handleOpenStats(template)}
+                                        className="btn-accent bg-none! bg-white! text-forest! border border-forest/20 shadow-none hover:shadow-none hover:bg-forest/5 px-3 py-1.5 text-xs gap-1"
+                                    >
+                                        <Info className="w-3.5 h-3.5" />
+                                        Stats
+                                    </button>
+                                    <button 
+                                        onClick={() => handleOpenModal(template)}
+                                        className="btn-accent px-3 py-1.5 text-xs gap-1 shadow-none"
+                                    >
+                                        <Edit3 className="w-3.5 h-3.5" />
+                                        Edit
+                                    </button>
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -274,6 +343,109 @@ const MentorDashboard = () => {
                                 <button type="submit" className="btn-primary w-auto px-8">{editingId ? 'Publish New Version' : 'Publish Template'}</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+            {/* History Modal */}
+            {showHistoryModal && (
+                <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-forest-dark/40 backdrop-blur-sm" onClick={() => setShowHistoryModal(false)}></div>
+                    <div className="glass bg-white/95 w-full max-w-lg rounded-3xl p-8 relative z-10 animate-reveal-up shadow-2xl border border-white">
+                        <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+                            <h3 className="text-2xl font-serif text-forest-dark flex items-center gap-2"><Clock className="w-6 h-6 text-amber" /> Version History</h3>
+                            <button onClick={() => setShowHistoryModal(false)} className="text-gray-400 hover:text-red-500 transition-colors">
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+                        {historyLoading ? (
+                            <div className="flex justify-center p-10"><div className="w-8 h-8 border-4 border-amber border-t-transparent rounded-full animate-spin"></div></div>
+                        ) : (
+                            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                                {historyData.map((hist, idx) => (
+                                    <div key={hist.id} className="relative pl-6 pb-4 border-l-2 border-forest/10 last:border-0 last:pb-0">
+                                        <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-cream border-2 border-amber"></div>
+                                        <div className="bg-gray-50 border border-gray-100 p-4 rounded-xl">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="font-bold text-forest">Version {hist.version}.0</span>
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${hist.active ? 'bg-sage/20 text-forest' : 'bg-gray-200 text-gray-500'}`}>{hist.active ? 'Active' : 'Archived'}</span>
+                                            </div>
+                                            <div className="text-xs text-text-muted mb-2">Created on {new Date(hist.createdAt).toLocaleDateString()}</div>
+                                            <p className="text-sm text-charcoal line-clamp-3">{hist.description}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+            
+            {/* Stats Modal */}
+            {statsModalOpen && statsTemplate && (
+                <div className="modal-overlay" style={{ display: 'flex', position: 'fixed', inset: 0, background: 'rgba(13,43,34,0.6)', backdropFilter: 'blur(8px)', zIndex: 100, alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => setStatsModalOpen(false)}>
+                    <div className="modal animate-reveal-up" onClick={e => e.stopPropagation()} style={{ background: 'var(--cream)', borderRadius: '24px', width: '100%', maxWidth: '600px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 32px 120px rgba(13,43,34,0.3)', border: '1px solid var(--border)', borderTop: '6px solid var(--forest)' }}>
+                        <div className="modal-header" style={{ padding: '24px 32px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white' }}>
+                            <h3 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--forest-dark)', marginBottom: '0', lineHeight: '1' }}>Form Statistics</h3>
+                            <button onClick={() => setStatsModalOpen(false)} style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1px solid var(--border)', background: 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', fontSize: '1.2rem', color: 'var(--text-muted)' }}>✕</button>
+                        </div>
+                        <div className="modal-body overflow-y-auto" style={{ padding: '32px' }}>
+                            <div className="grid grid-cols-2 gap-4 mb-6">
+                                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col items-center justify-center">
+                                    <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-1">Total Signed</span>
+                                    <span className="text-2xl font-serif text-forest">{statsLoading ? '-' : statsData?.totalSigned || 0}</span>
+                                </div>
+                                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col items-center justify-center">
+                                    <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-1">Total Pending</span>
+                                    <span className="text-2xl font-serif text-amber">{statsLoading ? '-' : statsData?.totalPending || 0}</span>
+                                </div>
+                            </div>
+                            
+                            <div className="space-y-4 mb-8">
+                                <div className="flex justify-between items-center border-b border-gray-200 pb-3">
+                                    <span className="text-xs font-bold text-text-muted uppercase tracking-wider">Created By</span>
+                                    <span className="text-forest-dark font-medium">{statsTemplate.createdBy || 'System Admin'}</span>
+                                </div>
+                                <div className="flex justify-between items-center border-b border-gray-200 pb-3">
+                                    <span className="text-xs font-bold text-text-muted uppercase tracking-wider">Current Version</span>
+                                    <span className="text-forest-dark font-medium">v{statsTemplate.version || 1}.0</span>
+                                </div>
+                                <div className="flex justify-between items-center border-b border-gray-200 pb-3">
+                                    <span className="text-xs font-bold text-text-muted uppercase tracking-wider">Status</span>
+                                    <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase ${statsTemplate.active ? 'bg-forest/10 text-forest' : 'bg-red-100 text-red-600'}`}>{statsTemplate.active ? 'Active' : 'Archived / Draft'}</span>
+                                </div>
+                            </div>
+
+                            <h4 className="font-bold text-forest-dark mb-4 uppercase tracking-wider text-sm">Assigned Students</h4>
+                            
+                            {statsLoading ? (
+                                <div className="flex justify-center p-6 text-sage"><div className="w-6 h-6 animate-spin rounded-full border-2 border-sage border-t-transparent"></div></div>
+                            ) : statsData?.students && statsData.students.length > 0 ? (
+                                <div className="space-y-3 bg-white p-4 rounded-xl border border-gray-100">
+                                    {statsData.students.map(student => (
+                                        <div key={student.id} className="flex flex-wrap items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                            <div className="flex flex-col">
+                                                <span className="font-medium text-forest-dark text-sm">{student.name}</span>
+                                                <span className="text-xs text-text-muted">{student.email}</span>
+                                            </div>
+                                            <div className="flex flex-col items-end">
+                                                {student.hasSigned ? (
+                                                    <>
+                                                        <span className="text-xs font-bold text-forest bg-forest/10 px-2 py-1 rounded-md">Signed</span>
+                                                        <span className="text-[10px] text-text-muted mt-1">{new Date(student.signedAt).toLocaleDateString()}</span>
+                                                    </>
+                                                ) : (
+                                                    <span className="text-xs font-bold text-amber bg-amber/10 px-2 py-1 rounded-md">Pending</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center p-6 text-text-muted bg-gray-50 rounded-xl border border-gray-100 text-sm">
+                                    No students have been assigned to this template.
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}

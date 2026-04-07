@@ -85,7 +85,7 @@
   }
 
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-forest to-sage;
+    @apply bg-clip-text text-transparent bg-linear-to-r from-forest to-sage;
   }
 }
 
@@ -110,12 +110,12 @@
   }
 
   .form-input:focus {
-    @apply border-forest/50 bg-white ring-4 ring-forest/10 -translate-y-[1px];
+    @apply border-forest/50 bg-white ring-4 ring-forest/10 -translate-y-px;
   }
 
   /* Stunning Buttons */
   .btn-primary {
-    @apply w-full relative overflow-hidden px-5 py-3.5 bg-gradient-to-r from-forest to-forest-mid text-white border-none rounded-xl font-semibold cursor-pointer transition-all duration-300 shadow-md transform hover:-translate-y-1 hover:shadow-lg active:translate-y-0 active:shadow-md disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none;
+    @apply w-full relative overflow-hidden px-5 py-3.5 bg-linear-to-r from-forest to-forest-mid text-white border-none rounded-xl font-semibold cursor-pointer transition-all duration-300 shadow-md transform hover:-translate-y-1 hover:shadow-lg active:translate-y-0 active:shadow-md disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none;
   }
 
   .btn-primary::after {
@@ -128,7 +128,7 @@
   }
 
   .btn-accent {
-    @apply flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber to-amber-light text-white border-none rounded-xl font-semibold cursor-pointer transition-all duration-300 shadow-md hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(232,146,58,0.4)] active:translate-y-0 active:shadow-md;
+    @apply flex items-center justify-center gap-2 px-5 py-2.5 bg-linear-to-r from-amber to-amber-light text-white border-none rounded-xl font-semibold cursor-pointer transition-all duration-300 shadow-md hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(232,146,58,0.4)] active:translate-y-0 active:shadow-md;
   }
 
   /* Animations */

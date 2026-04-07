@@ -62,18 +62,27 @@ public class DataInitializer implements CommandLineRunner {
         createMentorIfNotExists("mentor2@gmail.com", "Sarah Mentor");
         createMentorIfNotExists("mentor3@gmail.com", "David Mentor");
 
-        // 4. Populate default Students
         User mentor1 = userRepository.findByEmail("mentor1@gmail.com")
                 .orElseThrow(() -> new RuntimeException("Mentor1 not found"));
 
         User mentor2 = userRepository.findByEmail("mentor2@gmail.com")
                 .orElseThrow(() -> new RuntimeException("Mentor2 not found"));
+                
+        User mentor3 = userRepository.findByEmail("mentor3@gmail.com")
+                .orElseThrow(() -> new RuntimeException("Mentor3 not found"));
 
         createStudentIfNotExists("student1@gmail.com", "Alice Student", mentor1);
         createStudentIfNotExists("student2@gmail.com", "Bob Student", mentor1);
         createStudentIfNotExists("student3@gmail.com", "Charlie Student", mentor2);
         createStudentIfNotExists("student4@gmail.com", "Diana Student", mentor2);
         createStudentIfNotExists("student5@gmail.com", "Eve Student", mentor2);
+
+        // Populate 50 more dummy students
+        User[] mentors = {mentor1, mentor2, mentor3};
+        for (int i = 6; i <= 55; i++) {
+            User assignedMentor = mentors[i % 3]; // Distribute evenly
+            createStudentIfNotExists("student" + i + "@gmail.com", "Test Student " + i, assignedMentor);
+        }
 
         // 5. Seed actual templates
         User admin = userRepository.findByEmail("admin@gmail.com").orElse(null);

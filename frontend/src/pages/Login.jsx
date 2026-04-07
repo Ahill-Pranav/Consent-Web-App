@@ -92,23 +92,7 @@ const Login = () => {
                         <h2 className="text-3xl font-serif text-forest-dark mb-2">Welcome Back</h2>
                         <p className="text-text-muted mb-8">Please enter your details to sign in.</p>
 
-                        {/* Demo Accounts Toggle */}
-                        <div className="flex gap-2 mb-8 bg-forest/5 p-1.5 rounded-2xl">
-                            {['student', 'mentor', 'admin'].map((role) => (
-                                <button
-                                    key={role}
-                                    type="button"
-                                    onClick={() => handleDemoRole(role)}
-                                    className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-xl transition-all duration-300 ${
-                                        demoRole === role 
-                                        ? 'bg-white text-forest shadow-sm' 
-                                        : 'text-text-muted hover:text-forest'
-                                    }`}
-                                >
-                                    {role}
-                                </button>
-                            ))}
-                        </div>
+                        {/* Demo Accounts Toggle Removed */}
 
                         {error && (
                             <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm font-medium flex items-center gap-3">

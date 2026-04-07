@@ -2,6 +2,7 @@ package com.consentapp.controller;
 
 import com.consentapp.dto.TemplateRequest;
 import com.consentapp.dto.TemplateResponse;
+import com.consentapp.dto.TemplateStatsResponse;
 import com.consentapp.service.TemplateService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 
 @RestController
@@ -52,10 +55,10 @@ public class TemplateController {
             Authentication authentication,
             Pageable pageable,
             @RequestParam(required = false) String search) {
-        boolean isAdmin = authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        boolean isAdminOrMentor = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_MENTOR"));
 
-        if (isAdmin) {
+        if (isAdminOrMentor) {
             return ResponseEntity.ok(templateService.getAllTemplates(pageable, search));
         } else {
             return ResponseEntity.ok(templateService.getActiveTemplates(authentication.getName(), pageable, search));
@@ -66,5 +69,25 @@ public class TemplateController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MENTOR', 'STUDENT')")
     public ResponseEntity<TemplateResponse> getTemplateById(@PathVariable Long id) {
         return ResponseEntity.ok(templateService.getTemplateById(id));
+    }
+
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MENTOR')")
+    public ResponseEntity<TemplateResponse> toggleTemplateStatus(
+            @PathVariable Long id,
+            @RequestParam boolean active) {
+        return ResponseEntity.ok(templateService.toggleTemplateStatus(id, active));
+    }
+
+    @GetMapping("/{id}/history")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MENTOR')")
+    public ResponseEntity<List<TemplateResponse>> getTemplateHistory(@PathVariable Long id) {
+        return ResponseEntity.ok(templateService.getTemplateHistory(id));
+    }
+
+    @GetMapping("/{id}/stats")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MENTOR')")
+    public ResponseEntity<TemplateStatsResponse> getTemplateStats(@PathVariable Long id) {
+        return ResponseEntity.ok(templateService.getTemplateStats(id));
     }
 }

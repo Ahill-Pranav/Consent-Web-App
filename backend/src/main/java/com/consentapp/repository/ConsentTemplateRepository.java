@@ -14,4 +14,5 @@ public interface ConsentTemplateRepository extends JpaRepository<ConsentTemplate
     Page<ConsentTemplate> findByIsActiveTrue(Pageable pageable);
     Page<ConsentTemplate> findByTitleContainingIgnoreCase(String title, Pageable pageable);
     Page<ConsentTemplate> findByIsActiveTrueAndTitleContainingIgnoreCase(String title, Pageable pageable);
+    List<ConsentTemplate> findByTitleOrderByVersionDesc(String title);
 }

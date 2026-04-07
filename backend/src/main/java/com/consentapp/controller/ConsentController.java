@@ -45,7 +45,7 @@ public class ConsentController {
     }
 
     @GetMapping("/my")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('STUDENT', 'MENTOR', 'ADMIN')")
     public ResponseEntity<List<ConsentResponse>> getMyConsents(Authentication authentication) {
         return ResponseEntity.ok(consentService.getMyConsents(authentication.getName()));
     }

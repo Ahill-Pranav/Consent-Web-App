@@ -2,6 +2,7 @@ S:\Consent-Web-App\backend\src\main\java\com\consentapp\repository\ConsentTempla
 S:\Consent-Web-App\backend\src\main\java\com\consentapp\dto\ConsentResponse.java
 S:\Consent-Web-App\backend\src\main\java\com\consentapp\controller\ConsentController.java
 S:\Consent-Web-App\backend\src\main\java\com\consentapp\security\JwtAuthenticationFilter.java
+S:\Consent-Web-App\backend\src\main\java\com\consentapp\dto\StudentStatusDto.java
 S:\Consent-Web-App\backend\src\main\java\com\consentapp\config\OpenApiConfig.java
 S:\Consent-Web-App\backend\src\main\java\com\consentapp\controller\AuthController.java
 S:\Consent-Web-App\backend\src\main\java\com\consentapp\dto\TemplateResponse.java
@@ -25,6 +26,7 @@ S:\Consent-Web-App\backend\src\main\java\com\consentapp\entity\ConsentRecord.jav
 S:\Consent-Web-App\backend\src\main\java\com\consentapp\security\SecurityConfig.java
 S:\Consent-Web-App\backend\src\main\java\com\consentapp\dto\RegisterRequest.java
 S:\Consent-Web-App\backend\src\main\java\com\consentapp\exception\ResourceNotFoundException.java
+S:\Consent-Web-App\backend\src\main\java\com\consentapp\dto\TemplateStatsResponse.java
 S:\Consent-Web-App\backend\src\main\java\com\consentapp\service\TemplateService.java
 S:\Consent-Web-App\backend\src\main\java\com\consentapp\dto\TemplateRequest.java
 S:\Consent-Web-App\backend\src\main\java\com\consentapp\exception\GlobalExceptionHandler.java
